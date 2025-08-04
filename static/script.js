@@ -175,9 +175,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (files.length > 0) {
                 const file = files[0];
                 
-                // 檢查文件類型
-                if (!file.type.startsWith('image/')) {
-                    alert('請選擇圖片文件！');
+                // 檢查文件類型 - 支援 HEIC/HEIF 格式
+                const allowedTypes = ['image/', 'application/octet-stream']; // HEIC files may appear as octet-stream
+                const allowedExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.heic', '.heif'];
+                const fileName = file.name.toLowerCase();
+                const hasValidType = allowedTypes.some(type => file.type.startsWith(type));
+                const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+                
+                if (!hasValidType && !hasValidExtension) {
+                    alert('請選擇支援的圖片文件格式（PNG、JPG、JPEG、GIF、HEIC）！');
                     return;
                 }
 
@@ -201,8 +207,19 @@ document.addEventListener('DOMContentLoaded', function() {
         function showPreview(file) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                previewImage.src = e.target.result;
-                previewInfo.textContent = `${file.name} (${formatFileSize(file.size)})`;
+                const fileName = file.name.toLowerCase();
+                
+                // 檢查是否為 HEIC/HEIF 檔案
+                if (fileName.endsWith('.heic') || fileName.endsWith('.heif')) {
+                    // HEIC 檔案可能無法在瀏覽器中預覽，顯示檔案資訊
+                    previewImage.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI0MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SEVJQyDlnJbniYc8L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI2MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+5pqC5pe25pqC5Y+v6aKE6Ka9PC90ZXh0Pjwvc3ZnPg==';
+                    previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #666;">HEIC 格式已上傳，將正常處理</small>`;
+                } else {
+                    // 一般圖片檔案正常預覽
+                    previewImage.src = e.target.result;
+                    previewInfo.textContent = `${file.name} (${formatFileSize(file.size)})`;
+                }
+                
                 dropZoneContent.style.display = 'none';
                 dropZonePreview.style.display = 'flex';
             };

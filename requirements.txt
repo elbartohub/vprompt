@@ -4,5 +4,6 @@ google-auth-oauthlib
 google-api-python-client
 requests
 werkzeug
+python-dotenv
 # 假設 Gemini API 有官方 Python SDK
 # gemini-flash-lite-sdk

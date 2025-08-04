@@ -9,7 +9,7 @@ import base64
 from flask import make_response
 
 UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'heic', 'heif'}
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -19,6 +19,19 @@ load_dotenv()
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def get_image_mime_type(filename):
+    """Get the appropriate MIME type for the image file"""
+    ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+    mime_types = {
+        'png': 'image/png',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'gif': 'image/gif',
+        'heic': 'image/heic',
+        'heif': 'image/heif'
+    }
+    return mime_types.get(ext, 'image/jpeg')  # Default to JPEG for unknown types
 
 def get_default_camera_motion(prompt_type, scene, character):
     """Generate default camera motion based on scene and character context"""
@@ -113,7 +126,7 @@ def index():
             prompt_text = ''
             image_url = None
         else:
-            if file and allowed_file(file.filename):
+            if file and file.filename and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(image_path)
@@ -126,6 +139,9 @@ def index():
             url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
             with open(image_path, "rb") as f:
                 img_b64 = base64.b64encode(f.read()).decode()
+            
+            # Get appropriate MIME type for the uploaded file
+            mime_type = get_image_mime_type(filename)
             # 根據 output_lang 設定 prompt 語言
             lang_map = {
                 'en': 'English',
@@ -153,7 +169,7 @@ def index():
                     {
                         "parts": [
                             {"text": prompt_text_recog},
-                            {"inline_data": {"mime_type": "image/jpeg", "data": img_b64}}
+                            {"inline_data": {"mime_type": mime_type, "data": img_b64}}
                         ]
                     }
                 ]

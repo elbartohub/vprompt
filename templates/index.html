@@ -36,7 +36,7 @@
                     <div class="drop-zone-text">
                         <p><strong>拖放圖片至此處</strong></p>
                         <p>或 <span class="drop-zone-browse">點擊瀏覽</span></p>
-                        <p class="drop-zone-formats">支援 PNG、JPG、JPEG、GIF</p>
+                        <p class="drop-zone-formats">支援 PNG、JPG、JPEG、GIF、HEIC</p>
                     </div>
                 </div>
                 <div class="drop-zone-preview" id="dropZonePreview" style="display:none;">
@@ -47,7 +47,7 @@
                     </div>
                 </div>
             </div>
-            <input type="file" name="image" id="fileInput" accept="image/*" style="display:none;">
+            <input type="file" name="image" id="fileInput" accept="image/*,.heic,.heif" style="display:none;">
             <br>
             <label>選擇時間：</label>
             <input type="time" name="time" min="00:00" max="23:59" value="{{ time }}">
