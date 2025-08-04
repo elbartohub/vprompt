@@ -74,6 +74,18 @@ python app.py
 
 應用程式將在 http://localhost:5001 啟動。
 
+#### 🌐 網路存取設定
+預設情況下，應用程式支援網路存取（`HOST=0.0.0.0`）：
+- **本機存取**: http://localhost:5001
+- **網路存取**: http://[your-ip-address]:5001
+
+若要僅限本機存取，可在 `.env` 檔案中設定：
+```env
+HOST=127.0.0.1
+PORT=5001
+FLASK_DEBUG=True
+```
+
 ## API 設定
 
 ### Gemini API Key 取得

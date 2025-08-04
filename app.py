@@ -497,5 +497,19 @@ def gemini_2_flash_api(image_path, api_key):
 # Google Drive 分享功能略（需 OAuth 流程）
 
 if __name__ == '__main__':
+    # Configuration for network access
+    host = os.getenv('HOST', '0.0.0.0')  # 0.0.0.0 allows network access
     port = int(os.getenv('PORT', 5001))
-    app.run(debug=True, port=port)
+    debug = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
+    
+    print(f"🚀 Starting vPrompt server...")
+    print(f"📡 Host: {host}")
+    print(f"🔌 Port: {port}")
+    print(f"🐛 Debug: {debug}")
+    print(f"🌐 Access URLs:")
+    print(f"   Local:   http://localhost:{port}")
+    if host == '0.0.0.0':
+        print(f"   Network: http://[your-ip-address]:{port}")
+    print("🎯 Ready to generate creative prompts!")
+    
+    app.run(debug=debug, host=host, port=port)
