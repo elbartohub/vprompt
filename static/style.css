@@ -223,3 +223,194 @@ img {
     background: #dc2626;
     transform: scale(1.1);
 }
+
+/* Mobile Responsive Styles */
+@media screen and (max-width: 768px) {
+    body {
+        margin: 0;
+        padding: 0;
+    }
+    
+    .container {
+        max-width: 100%;
+        margin: 10px;
+        padding: 20px;
+        border-radius: 12px;
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+    }
+    
+    label {
+        font-size: 0.9rem;
+        margin-top: 10px;
+    }
+    
+    input, select, textarea {
+        padding: 12px;
+        font-size: 16px; /* Prevents zoom on iOS */
+        border-radius: 8px;
+    }
+    
+    button {
+        padding: 12px;
+        font-size: 1rem;
+        border-radius: 8px;
+        min-height: 44px; /* Touch-friendly minimum size */
+    }
+    
+    /* Drop zone mobile optimizations */
+    .drop-zone {
+        min-height: 120px;
+        padding: 10px;
+    }
+    
+    .drop-zone-icon {
+        font-size: 2rem;
+        margin-bottom: 12px;
+    }
+    
+    .drop-zone-text p {
+        font-size: 0.9rem;
+    }
+    
+    .drop-zone-text p:first-child {
+        font-size: 1rem;
+    }
+    
+    .drop-zone-formats {
+        font-size: 0.8rem;
+    }
+    
+    /* Button container mobile layout */
+    .button-container {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .button-container a,
+    .button-container button {
+        width: 100%;
+        text-align: center;
+        margin: 0;
+    }
+    
+    /* Copy buttons mobile optimization */
+    #copyTextBtn, #copyJsonBtn {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+        width: 100%;
+    }
+    
+    /* Textarea mobile optimization */
+    textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    /* Tip section mobile */
+    .tip {
+        padding: 12px;
+        margin: 12px 0;
+        font-size: 0.85rem;
+    }
+    
+    /* Image preview mobile */
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+    
+    /* Form spacing mobile */
+    br {
+        display: none; /* Remove extra line breaks on mobile */
+    }
+    
+    label {
+        display: block;
+        margin-top: 16px;
+        margin-bottom: 4px;
+    }
+    
+    /* Preview overlay mobile optimization */
+    .preview-overlay {
+        opacity: 0.8; /* More visible on mobile */
+    }
+    
+    .remove-image {
+        width: 36px;
+        height: 36px;
+        font-size: 1.4rem;
+        top: 10px;
+        right: 10px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .container {
+        margin: 5px;
+        padding: 16px;
+        border-radius: 8px;
+    }
+    
+    h1 {
+        font-size: 1.3rem;
+        margin-bottom: 16px;
+    }
+    
+    .drop-zone {
+        min-height: 100px;
+        padding: 8px;
+    }
+    
+    .drop-zone-icon {
+        font-size: 1.8rem;
+        margin-bottom: 8px;
+    }
+    
+    .drop-zone-text p:first-child {
+        font-size: 0.95rem;
+    }
+    
+    .tip {
+        padding: 10px;
+        font-size: 0.8rem;
+    }
+    
+    input, select, textarea, button {
+        padding: 10px;
+        font-size: 16px;
+    }
+    
+    /* Stack form elements vertically on very small screens */
+    #customSceneInput,
+    #customCharacterInput {
+        display: block !important;
+        margin-top: 8px;
+        width: 100% !important;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    button:hover {
+        background: #6366f1; /* Remove hover effects on touch devices */
+    }
+    
+    .drop-zone:hover {
+        border-color: #cbd5e1;
+        background: #f8fafc;
+    }
+    
+    .preview-overlay {
+        opacity: 0.9; /* Always visible on touch devices */
+    }
+    
+    #copyTextBtn:hover, #copyJsonBtn:hover {
+        background: #10b981;
+        transform: none;
+        box-shadow: none;
+    }
+}

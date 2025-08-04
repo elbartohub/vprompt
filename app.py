@@ -20,6 +20,44 @@ load_dotenv()
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def get_default_camera_motion(prompt_type, scene, character):
+    """Generate default camera motion based on scene and character context"""
+    if prompt_type != 'video':
+        return ''
+    
+    # Camera motion suggestions based on scene context
+    scene_motions = {
+        '戶外': ['sweeping drone shot', 'tracking shot through landscape', 'wide establishing shot'],
+        '室內': ['intimate handheld movement', 'smooth dolly shot', 'close-up push-in'],
+        '森林': ['tracking through trees', 'low-angle forest walk', 'canopy reveal shot'],
+        '海邊': ['aerial coastal flyover', 'wave-following tracking', 'sunset crane shot'],
+        '咖啡廳': ['subtle handheld intimacy', 'table-level dolly', 'window reflection shot'],
+        '辦公室': ['corporate tracking shot', 'meeting room push-in', 'window city view'],
+    }
+    
+    # Character-based motion suggestions
+    character_motions = {
+        '情侶': 'romantic close-up orbit',
+        '攝影師': 'dynamic following shot',
+        '學生': 'youthful tracking movement',
+        '商人': 'confident dolly approach',
+        '藝術家': 'creative rotating shot',
+        '男': 'steady character tracking',
+        '女': 'elegant following movement',
+        '男孩': 'playful handheld motion',
+        '女孩': 'gentle floating movement',
+        '老人': 'respectful slow push-in',
+    }
+    
+    # Try to match scene first, then character
+    if scene and scene in scene_motions:
+        return scene_motions[scene][0]  # Return first suggestion
+    elif character and character in character_motions:
+        return character_motions[character]
+    else:
+        # Default cinematic motions
+        return 'smooth tracking shot'
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     prompt_text = None
@@ -100,7 +138,16 @@ def index():
                 'es': 'Spanish'
             }
             prompt_lang = lang_map.get(output_lang, 'English')
-            prompt_text_recog = f"Please identify this image in detail and output as JSON: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting, ending. All responses must be in {prompt_lang}." if output_lang == 'en' else f"請詳細識別這張圖片，並以 json 格式輸出：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting、ending。所有回應內容一律使用{prompt_lang}。"
+            if output_lang == 'en':
+                if prompt_type == 'video':
+                    prompt_text_recog = f"Please identify this image in detail and output as JSON for VIDEO content: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting, ending. For 'camera motion', suggest CREATIVE and CINEMATIC camera movements that would work well for this scene (e.g., tracking shots, crane movements, handheld intimacy, drone shots, zooms, dollies, rotations). All responses must be in {prompt_lang}."
+                else:
+                    prompt_text_recog = f"Please identify this image in detail and output as JSON: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting, ending. All responses must be in {prompt_lang}."
+            else:
+                if prompt_type == 'video':
+                    prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出影片內容：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting、ending。對於 'camera motion'，請根據場景建議富有創意和電影感的攝影機運動（例如：追蹤鏡頭、升降運動、手持親密感、空拍鏡頭、推拉鏡頭、移動推軌、旋轉等）。所有回應內容一律使用{prompt_lang}。"
+                else:
+                    prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting、ending。所有回應內容一律使用{prompt_lang}。"
             payload = {
                 "contents": [
                     {
@@ -153,7 +200,7 @@ def index():
                 'ambiance_or_mood': '',  # Will be inferred by Gemini based on other inputs
                 'Location': user_scene if user_scene and user_scene != '其它' else '',  # Use scene as location if provided
                 'Visual style': '',  # Will be inferred
-                'camera motion': 'video' if prompt_type == 'video' else '',  # Set camera motion for video prompts
+                'camera motion': get_default_camera_motion(prompt_type, user_scene, user_character) if prompt_type == 'video' else '',
                 'lighting': '',  # Will be inferred
                 'ending': ''  # Will be inferred
             }
@@ -188,9 +235,15 @@ def index():
                 prompt_lang = lang_map.get(output_lang, 'English')
                 
                 if output_lang == 'en':
-                    enhance_prompt = f"Based on these user inputs: {user_input_text}, please create a detailed JSON with the following fields: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting, ending. Fill in creative and appropriate details for missing fields. Output in {prompt_lang} and format as valid JSON only."
+                    if prompt_type == 'video':
+                        enhance_prompt = f"Based on these user inputs: {user_input_text}, please create a detailed JSON for VIDEO content with the following fields: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting, ending. For 'camera motion', create CREATIVE and CINEMATIC camera movements that enhance the storytelling (e.g., 'smooth tracking shot following the subject', 'dramatic crane shot revealing the landscape', 'intimate handheld close-up', 'sweeping drone shot', 'slow zoom into character's eyes', 'dynamic dolly push', 'rotating around subject', 'low-angle tracking', 'aerial establishing shot', etc.). Make the camera motion specific, cinematic, and emotionally engaging. Output in {prompt_lang} and format as valid JSON only."
+                    else:
+                        enhance_prompt = f"Based on these user inputs: {user_input_text}, please create a detailed JSON with the following fields: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting, ending. Fill in creative and appropriate details for missing fields. Output in {prompt_lang} and format as valid JSON only."
                 else:
-                    enhance_prompt = f"根據這些用戶輸入: {user_input_text}，請創建一個詳細的 JSON，包含以下欄位：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting、ending。為缺少的欄位填入富有創意且合適的細節。請用{prompt_lang}回應，並只輸出有效的 JSON 格式。"
+                    if prompt_type == 'video':
+                        enhance_prompt = f"根據這些用戶輸入: {user_input_text}，請創建一個專為影片內容設計的詳細 JSON，包含以下欄位：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting、ending。對於 'camera motion' 欄位，請創造富有創意和電影感的攝影機運動，增強故事敘述效果（例如：'平滑追蹤鏡頭跟隨主體'、'戲劇性升降鏡頭展現風景'、'親密手持特寫'、'掃描式空拍鏡頭'、'緩慢推軌至角色眼部'、'動態移動推軌'、'環繞主體旋轉'、'低角度追蹤'、'航拍建立鏡頭'等）。讓攝影機運動具體、有電影感且富有情感張力。請用{prompt_lang}回應，並只輸出有效的 JSON 格式。"
+                    else:
+                        enhance_prompt = f"根據這些用戶輸入: {user_input_text}，請創建一個詳細的 JSON，包含以下欄位：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting、ending。為缺少的欄位填入富有創意且合適的細節。請用{prompt_lang}回應，並只輸出有效的 JSON 格式。"
                 
                 payload = {
                     "contents": [
