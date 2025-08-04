@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>vPrompt - 圖片/影片提示詞生成器</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>vPrompt - 圖片/影片提示詞生成器</h1>
+        <form method="POST" enctype="multipart/form-data" id="promptForm">
+            <button type="button" id="resetBtn" style="margin-left:10px;">重設</button>
+            <label>選擇提示類型：</label>
+            <select name="prompt_type">
+                <option value="image" {% if prompt_type == 'image' %}selected{% endif %}>圖片</option>
+                <option value="video" {% if prompt_type == 'video' %}selected{% endif %}>影片</option>
+            </select>
+            <br>
+            <label>輸出語言：</label>
+            <select name="output_lang">
+                <option value="en" {% if output_lang == 'en' %}selected{% endif %}>英語</option>
+                <option value="zh-tw" {% if output_lang == 'zh-tw' or output_lang == 'zh-TW' %}selected{% endif %}>繁體中文</option>
+                <option value="zh-cn" {% if output_lang == 'zh-cn' or output_lang == 'zh-CN' %}selected{% endif %}>簡體中文</option>
+                <option value="ja" {% if output_lang == 'ja' %}selected{% endif %}>日語</option>
+                <option value="ko" {% if output_lang == 'ko' %}selected{% endif %}>韓語</option>
+                <option value="fr" {% if output_lang == 'fr' %}selected{% endif %}>法語</option>
+                <option value="de" {% if output_lang == 'de' %}selected{% endif %}>德語</option>
+                <option value="es" {% if output_lang == 'es' %}selected{% endif %}>西班牙語</option>
+            </select>
+            <br>
+            <label>上傳圖片：</label>
+            <input type="file" name="image" accept="image/*">
+            <br>
+            <label>選擇時間：</label>
+            <input type="time" name="time" min="00:00" max="23:59" value="{{ time }}">
+            <br>
+            <label>場景：</label>
+            <select name="scene" id="sceneSelect">
+                <option value="戶外" {% if scene == '戶外' %}selected{% endif %}>戶外</option>
+                <option value="室內" {% if scene == '室內' %}selected{% endif %}>室內</option>
+                <option value="其它" {% if scene == '其它' or not scene %}selected{% endif %}>其它</option>
+            </select>
+            <input type="text" name="custom_scene" id="customSceneInput" placeholder="例如：森林、海邊、咖啡廳、辦公室..." style="display:inline;" value="{{ custom_scene }}">
+            <br>
+            <label>主角：</label>
+            <select name="character" id="characterSelect">
+                <option value="男" {% if character == '男' %}selected{% endif %}>男</option>
+                <option value="男孩" {% if character == '男孩' %}selected{% endif %}>男孩</option>
+                <option value="老人（男）" {% if character == '老人（男）' %}selected{% endif %}>老人（男）</option>
+                <option value="女" {% if character == '女' %}selected{% endif %}>女</option>
+                <option value="女孩" {% if character == '女孩' %}selected{% endif %}>女孩</option>
+                <option value="老人（女）" {% if character == '老人（女）' %}selected{% endif %}>老人（女）</option>
+                <option value="其它" {% if character == '其它' or not character %}selected{% endif %}>其它</option>
+            </select>
+            <input type="text" name="custom_character" id="customCharacterInput" placeholder="例如：情侶、攝影師、學生、商人、藝術家、..." style="display:inline;" value="{{ custom_character }}">
+            <br>
+            <label>額外描述：</label>
+            <input type="text" name="extra_desc" placeholder="描述風格、情緒、動作、運鏡、角度等... 例如：追蹤鏡頭、溫暖的陽光、復古風格、快樂的表情、低角度拍攝" value="{{ extra_desc }}">
+            <br>
+            <div class="tip" style="background-color: #f0f8ff; padding: 10px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #4CAF50;">
+                <strong>💡 提示：</strong>即使沒有上傳圖片，系統也會根據您選擇的場景、主角、時間和額外描述來生成豐富的提示詞！
+            </div>
+            <br>
+            <button type="submit">生成提示詞</button>
+        </form>
+        <hr>
+        {% if image_url %}
+        <div>
+            <h3>已上傳圖片：</h3>
+            <img src="{{ image_url }}" alt="上傳圖片" style="max-width:300px;">
+        </div>
+        {% endif %}
+        {% if prompt_text %}
+        <div>
+            <h2>生成的提示詞（文本）</h2>
+            <textarea id="promptTextArea" readonly style="width:100%;height:140px;">{{ prompt_text }}</textarea>
+            <div class="button-container">
+                <a href="/download_prompt?prompt={{ prompt_text }}" download>下載文本</a>
+                <button type="button" id="copyTextBtn">複製全部文本</button>
+            </div>
+        </div>
+        {% endif %}
+        {% if prompt_json %}
+        <div>
+            <h2>生成的提示詞（JSON）</h2>
+            <textarea id="promptJsonArea" readonly style="width:100%;height:180px;">{{ prompt_json_str }}</textarea>
+            <div class="button-container">
+                <a href="/download_json?prompt_json={{ prompt_json_str|urlencode }}" download>下載 JSON</a>
+                <button type="button" id="copyJsonBtn">複製全部 JSON</button>
+            </div>
+        </div>
+        {% endif %}
+        <div>
+            <button id="shareDriveBtn">分享至 Google Drive</button>
+        </div>
+    </div>
+    <script src="/static/script.js"></script>
+    <script src="/static/script.js"></script>
+</body>
+</html>
