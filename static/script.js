@@ -205,25 +205,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 顯示預覽函數
         function showPreview(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const fileName = file.name.toLowerCase();
+            const fileName = file.name.toLowerCase();
+            
+            // 檢查是否為 HEIC/HEIF 檔案
+            if (fileName.endsWith('.heic') || fileName.endsWith('.heif')) {
+                // HEIC 檔案無法在瀏覽器中預覽，直接顯示佔位符
+                previewImage.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1IiBzdHJva2U9IiNkZGQiIHN0cm9rZS13aWR0aD0iMiIgcng9IjgiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSIxOCIgZmlsbD0iIzRDQUY1MCIvPjx0ZXh0IHg9IjUwIiB5PSI1NiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC13ZWlnaHQ9ImJvbGQiPkhFSUM8L3RleHQ+PHRleHQgeD0iMTAwIiB5PSI5MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj7lt7LkuIrlgrPnmoQ8L3RleHQ+PHRleHQgeD0iMTAwIiB5PSIxMTAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+6Ieq5YuV5LiK5YKz5oiQ5YqfPC90ZXh0Pjwvc3ZnPg==';
+                previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #4CAF50; font-weight: bold;">✓ HEIC 格式已就緒，將正常處理</small>`;
                 
-                // 檢查是否為 HEIC/HEIF 檔案
-                if (fileName.endsWith('.heic') || fileName.endsWith('.heif')) {
-                    // HEIC 檔案可能無法在瀏覽器中預覽，顯示檔案資訊
-                    previewImage.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI0MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SEVJQyDlnJbniYc8L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI2MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+5pqC5pe25pqC5Y+v6aKE6Ka9PC90ZXh0Pjwvc3ZnPg==';
-                    previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #666;">HEIC 格式已上傳，將正常處理</small>`;
-                } else {
-                    // 一般圖片檔案正常預覽
-                    previewImage.src = e.target.result;
-                    previewInfo.textContent = `${file.name} (${formatFileSize(file.size)})`;
-                }
-                
+                // 直接顯示預覽，不需要 FileReader
                 dropZoneContent.style.display = 'none';
                 dropZonePreview.style.display = 'flex';
-            };
-            reader.readAsDataURL(file);
+            } else {
+                // 一般圖片檔案使用 FileReader 正常預覽
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    previewInfo.textContent = `${file.name} (${formatFileSize(file.size)})`;
+                    dropZoneContent.style.display = 'none';
+                    dropZonePreview.style.display = 'flex';
+                };
+                reader.onerror = function() {
+                    // 如果 FileReader 失敗，也使用佔位符
+                    previewImage.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1IiBzdHJva2U9IiNkZGQiIHN0cm9rZS13aWR0aD0iMiIgcng9IjgiLz48dGV4dCB4PSIxMDAiIHk9Ijc1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPuWcluePh+aqlOahiDwvdGV4dD48dGV4dCB4PSIxMDAiIHk9Ijk1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPuaaguaXtueFoOazlemgkOimi+mihzwvdGV4dD48L3N2Zz4=';
+                    previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #ff9800;">⚠ 預覽不可用，但檔案已就緒</small>`;
+                    dropZoneContent.style.display = 'none';
+                    dropZonePreview.style.display = 'flex';
+                };
+                reader.readAsDataURL(file);
+            }
         }
 
         // 移除圖片函數

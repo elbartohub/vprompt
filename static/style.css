@@ -172,6 +172,15 @@ img {
     height: 100%;
     object-fit: cover;
     border-radius: 10px;
+    background: #f8f9fa;
+}
+
+/* HEIC placeholder styling */
+.drop-zone-preview img[src*="data:image/svg+xml"] {
+    object-fit: contain;
+    padding: 20px;
+    background: #ffffff;
+    border: 2px dashed #e9ecef;
 }
 
 .preview-overlay {
@@ -199,6 +208,14 @@ img {
     text-align: center;
     padding: 8px;
     font-size: 0.9rem;
+}
+
+/* Special styling for HEIC preview info */
+.preview-info small {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.8rem;
+    opacity: 0.9;
 }
 
 .remove-image {
