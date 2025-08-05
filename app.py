@@ -687,9 +687,6 @@ def gemini_2_flash_api(image_path, api_key):
     }
     response = requests.post(url, json=payload, headers=headers)
     return response.json()
-
-# Google Drive 分享功能略（需 OAuth 流程）
-
 @app.route('/test_heic.html')
 def test_heic():
     return send_from_directory('.', 'test_heic.html')

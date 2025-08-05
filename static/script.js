@@ -31,14 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Google Drive 分享（僅前端提示，需後端 OAuth 實作）
-    const shareBtn = document.getElementById('shareDriveBtn');
-    if (shareBtn) {
-        shareBtn.addEventListener('click', function() {
-            alert('分享至 Google Drive 功能需後端授權，請參考 README 設定 Google API。');
-        });
-    }
-
     // 自動聚焦到故事描述欄位
     const extraDescTextarea = document.querySelector('textarea[name="extra_desc"]');
     if (extraDescTextarea) {
