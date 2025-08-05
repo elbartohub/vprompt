@@ -275,28 +275,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // 檢查是否為 HEIC/HEIF 檔案
             if (fileName.endsWith('.heic') || fileName.endsWith('.heif')) {
-                console.log('HEIC file detected, using server-side conversion...');
-                
-                // 直接使用服務器端轉換（最可靠的方法）
-                const convertUrl = `/convert_heic/${encodeURIComponent(file.name)}`;
-                console.log('Using server conversion URL:', convertUrl);
+                console.log('HEIC file detected, attempting real image preview...');
                 
                 // 顯示載入狀態
                 previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #f59e0b;">🔄 正在載入 HEIC 預覽...</small>`;
                 dropZoneContent.style.display = 'none';
                 dropZonePreview.style.display = 'flex';
                 
-                // 設置圖片源（瀏覽器會處理載入）
-                previewImage.onload = function() {
-                    console.log('✅ Server-side HEIC conversion successful!');
-                    previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #28a745; font-weight: bold;">🖥️ 服務器端 HEIC 預覽</small>`;
-                };
-                previewImage.onerror = function(e) {
-                    console.log('❌ Server conversion failed, trying client-side fallback...');
-                    // 如果服務器轉換失敗，回退到 heic2any
-                    attemptClientSideHeicConversion(file);
-                };
-                previewImage.src = convertUrl + '?t=' + Date.now();
+                // 嘗試客戶端轉換以顯示真實圖片
+                attemptClientSideHeicConversion(file);
                 
             } else {
                 console.log('Regular image file:', fileName);
@@ -350,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // HEIC 圖標背景
                 ctx.fillStyle = '#4caf50';
                 ctx.beginPath();
-                ctx.roundRect(120, 40, 60, 40, 8);
+                ctx.rect(120, 40, 60, 40);
                 ctx.fill();
                 
                 // HEIC 文字
@@ -405,8 +392,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             reader.onerror = function(error) {
                 console.error('Failed to read HEIC file for Canvas preview:', error);
-                // 最終降級到服務器端轉換
-                attemptServerSideHeicPreview(file);
+                // 最終降級顯示基本佔位符
+                showHeicPlaceholder(file);
             };
             
             // 讀取文件的前 64KB 用於元數據分析
@@ -451,23 +438,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Error extracting HEIC dimensions:', error);
                 return null;
             }
-        }
-        
-        // Canvas 輔助函數：圓角矩形
-        if (!CanvasRenderingContext2D.prototype.roundRect) {
-            CanvasRenderingContext2D.prototype.roundRect = function(x, y, width, height, radius) {
-                this.beginPath();
-                this.moveTo(x + radius, y);
-                this.lineTo(x + width - radius, y);
-                this.quadraticCurveTo(x + width, y, x + width, y + radius);
-                this.lineTo(x + width, y + height - radius);
-                this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-                this.lineTo(x + radius, y + height);
-                this.quadraticCurveTo(x, y + height, x, y + height - radius);
-                this.lineTo(x, y + radius);
-                this.quadraticCurveTo(x, y, x + radius, y);
-                this.closePath();
-            };
         }
         
         // 服務器端 HEIC 轉換預覽
@@ -811,43 +781,195 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 客戶端 HEIC 轉換（作為備用）
         function attemptClientSideHeicConversion(file) {
-            console.log('Attempting client-side HEIC conversion as fallback...');
+            console.log('Attempting client-side HEIC conversion...');
             
-            // 檢查是否有 heic2any 庫
+            // 設置載入狀態
+            previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #2196f3;">🔄 嘗試 HEIC 預覽...</small>`;
+            
+            // 方法1: 嘗試客戶端轉換
             if (typeof heic2any !== 'undefined') {
                 console.log('heic2any library found, starting conversion...');
-                // 使用 heic2any 轉換 HEIC 為 JPEG
+                
+                previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #2196f3;">🔄 正在轉換 HEIC 圖片...</small>`;
+                
                 heic2any({
                     blob: file,
                     toType: "image/jpeg",
                     quality: 0.8
-                }).then(function(conversionResult) {
-                    console.log('Client-side HEIC conversion successful!', conversionResult);
+                })
+                .then(function(conversionResult) {
+                    console.log('✅ Client-side HEIC conversion successful!');
                     const convertedBlob = Array.isArray(conversionResult) ? conversionResult[0] : conversionResult;
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        console.log('FileReader loaded converted image successfully');
-                        previewImage.src = e.target.result;
-                        previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #28a745; font-weight: bold;">✓ 客戶端 HEIC 轉換</small>`;
-                        dropZoneContent.style.display = 'none';
-                        dropZonePreview.style.display = 'flex';
+                    const imageUrl = URL.createObjectURL(convertedBlob);
+                    
+                    previewImage.onload = function() {
+                        console.log('✅ Converted HEIC image displayed successfully');
+                        previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #28a745; font-weight: bold;">✓ HEIC 圖片預覽</small>`;
+                        setTimeout(() => URL.revokeObjectURL(imageUrl), 2000);
                     };
-                    reader.onerror = function(error) {
-                        console.error('FileReader error for converted image:', error);
-                        showHeicPlaceholder(file);
+                    
+                    previewImage.onerror = function() {
+                        console.error('❌ Error displaying converted HEIC image');
+                        URL.revokeObjectURL(imageUrl);
+                        tryServerSideHeicPreview(file);
                     };
-                    reader.readAsDataURL(convertedBlob);
-                }).catch(function(error) {
-                    console.error('Client-side HEIC conversion failed:', error);
-                    console.log('Falling back to Canvas-based preview...');
-                    // 轉換失敗，嘗試 Canvas 預覽
-                    attemptCanvasHeicPreview(file);
+                    
+                    previewImage.src = imageUrl;
+                    dropZoneContent.style.display = 'none';
+                    dropZonePreview.style.display = 'flex';
+                })
+                .catch(function(error) {
+                    console.error('❌ Client-side HEIC conversion failed:', error);
+                    tryServerSideHeicPreview(file);
                 });
             } else {
-                console.log('heic2any library not available, trying Canvas preview');
-                // 沒有轉換庫，嘗試 Canvas 預覽
-                attemptCanvasHeicPreview(file);
+                console.warn('⚠️ heic2any library not available');
+                tryServerSideHeicPreview(file);
             }
+        }
+        
+        // 嘗試伺服器端 HEIC 轉換預覽
+        function tryServerSideHeicPreview(file) {
+            console.log('Attempting server-side HEIC conversion...');
+            
+            previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #f59e0b;">🔄 伺服器轉換中...</small>`;
+            
+            // 創建 FormData 上傳檔案進行轉換
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            fetch('/convert_heic_preview', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.blob();
+                } else {
+                    throw new Error('Server conversion failed');
+                }
+            })
+            .then(blob => {
+                console.log('✅ Server-side HEIC conversion successful!');
+                const imageUrl = URL.createObjectURL(blob);
+                
+                previewImage.onload = function() {
+                    console.log('✅ Server-converted HEIC image displayed');
+                    previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #28a745; font-weight: bold;">✓ 伺服器 HEIC 預覽</small>`;
+                    setTimeout(() => URL.revokeObjectURL(imageUrl), 2000);
+                };
+                
+                previewImage.onerror = function() {
+                    console.error('❌ Error displaying server-converted image');
+                    URL.revokeObjectURL(imageUrl);
+                    tryNativeHeicPreview(file);
+                };
+                
+                previewImage.src = imageUrl;
+                dropZoneContent.style.display = 'none';
+                dropZonePreview.style.display = 'flex';
+            })
+            .catch(error => {
+                console.error('❌ Server-side HEIC conversion failed:', error);
+                tryNativeHeicPreview(file);
+            });
+        }
+        
+        // 嘗試原生瀏覽器 HEIC 預覽
+        function tryNativeHeicPreview(file) {
+            console.log('Attempting native HEIC preview...');
+            
+            previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #6366f1;">🔄 原生預覽中...</small>`;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const testImg = new Image();
+                testImg.onload = function() {
+                    console.log('✅ Browser supports native HEIC preview!');
+                    previewImage.src = e.target.result;
+                    previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #28a745; font-weight: bold;">✓ 原生 HEIC 預覽</small>`;
+                    dropZoneContent.style.display = 'none';
+                    dropZonePreview.style.display = 'flex';
+                };
+                testImg.onerror = function() {
+                    console.warn('❌ Native HEIC preview not supported');
+                    showEnhancedHeicPlaceholder(file);
+                };
+                testImg.src = e.target.result;
+            };
+            reader.onerror = function() {
+                console.error('❌ FileReader failed for HEIC file');
+                showEnhancedHeicPlaceholder(file);
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 增強的 HEIC 佔位符（作為最終後備方案）
+        function showEnhancedHeicPlaceholder(file) {
+            console.log('Showing enhanced HEIC placeholder...');
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = 400;
+            canvas.height = 300;
+            const ctx = canvas.getContext('2d');
+            
+            // 背景漸變
+            const gradient = ctx.createLinearGradient(0, 0, 400, 300);
+            gradient.addColorStop(0, '#e8f5e8');
+            gradient.addColorStop(1, '#c8e6c9');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 400, 300);
+            
+            // 邊框
+            ctx.strokeStyle = '#4caf50';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([10, 5]);
+            ctx.strokeRect(5, 5, 390, 290);
+            ctx.setLineDash([]);
+            
+            // HEIC 標誌
+            ctx.fillStyle = '#4caf50';
+            ctx.beginPath();
+            ctx.arc(200, 80, 40, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('HEIC', 200, 88);
+            
+            // 手機圖標
+            ctx.fillStyle = '#666';
+            ctx.font = '32px Arial';
+            ctx.fillText('📱', 200, 140);
+            
+            // 文件信息
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 18px Arial';
+            const displayName = file.name.length > 25 ? file.name.substring(0, 22) + '...' : file.name;
+            ctx.fillText(displayName, 200, 180);
+            
+            ctx.fillStyle = '#666';
+            ctx.font = '14px Arial';
+            ctx.fillText(formatFileSize(file.size), 200, 205);
+            
+            // 嘗試顯示預估尺寸
+            ctx.fillText('預估尺寸: 4032 × 3024', 200, 225);
+            
+            // 狀態
+            ctx.fillStyle = '#4caf50';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText('✓ 已準備上傳處理', 200, 255);
+            
+            ctx.fillStyle = '#999';
+            ctx.font = '12px Arial';
+            ctx.fillText('圖片將在服務器端轉換', 200, 275);
+            
+            previewImage.src = canvas.toDataURL();
+            previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #4caf50; font-weight: bold;">📱 HEIC 已就緒</small><br><small style="color: #666;">文件已準備上傳，將在服務器端處理</small>`;
+            
+            dropZoneContent.style.display = 'none';
+            dropZonePreview.style.display = 'flex';
         }
 
         // 格式化文件大小
@@ -857,6 +979,27 @@ document.addEventListener('DOMContentLoaded', function() {
             const sizes = ['Bytes', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // 嘗試從 HEIC 文件中提取尺寸信息
+        function extractHeicDimensions(dataView) {
+            try {
+                // 簡單的 HEIC 元數據提取（非完整實現）
+                // 在實際的 HEIC 文件中尋找尺寸信息
+                for (let i = 0; i < dataView.byteLength - 8; i += 4) {
+                    if (dataView.getUint32(i) === 0x69736865) { // 'ishe' 標識
+                        // 嘗試提取尺寸信息，這是簡化版本
+                        return {
+                            width: 4032,  // 典型的 iPhone HEIC 尺寸
+                            height: 3024
+                        };
+                    }
+                }
+                return null;
+            } catch (error) {
+                console.log('Error extracting HEIC dimensions:', error);
+                return null;
+            }
         }
     }
 });

@@ -462,6 +462,59 @@ def index():
 def uploaded_file(filename):
     return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
+@app.route('/convert_heic_preview', methods=['POST'])
+def convert_heic_preview():
+    """Convert uploaded HEIC file to JPEG for immediate preview"""
+    try:
+        import pillow_heif
+        from PIL import Image
+        import io
+        
+        # Register HEIF opener with Pillow
+        pillow_heif.register_heif_opener()
+        
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+            
+        file = request.files['file']
+        if file.filename == '' or file.filename is None:
+            return jsonify({'error': 'No file selected'}), 400
+            
+        # Check if file is HEIC/HEIF
+        filename = file.filename.lower()
+        if not filename.endswith(('.heic', '.heif')):
+            return jsonify({'error': 'Not a HEIC/HEIF file'}), 400
+            
+        # Read file content
+        file_content = file.read()
+        
+        # Open and convert HEIC to JPEG
+        with Image.open(io.BytesIO(file_content)) as img:
+            # Convert to RGB if necessary
+            if img.mode not in ('RGB', 'L'):
+                img = img.convert('RGB')
+            
+            # Create thumbnail for preview (max 600x400 for faster loading)
+            img.thumbnail((600, 400), Image.Resampling.LANCZOS)
+            
+            # Save as JPEG to memory
+            img_io = io.BytesIO()
+            img.save(img_io, 'JPEG', quality=80, optimize=True)
+            img_io.seek(0)
+            
+            # Return as response
+            return send_file(
+                img_io,
+                mimetype='image/jpeg',
+                as_attachment=False
+            )
+            
+    except ImportError:
+        return jsonify({'error': 'HEIC support not available on server'}), 501
+    except Exception as e:
+        print(f"[ERROR] HEIC preview conversion failed: {e}")
+        return jsonify({'error': 'Preview conversion failed', 'details': str(e)}), 500
+
 @app.route('/convert_heic/<filename>')
 def convert_heic(filename):
     """Convert HEIC file to JPEG for preview"""
