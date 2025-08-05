@@ -25,6 +25,8 @@
 - 📋 **快速複製**：一鍵複製功能，支援剪貼板操作
 - 💾 **狀態記憶**：Cookie 技術記住用戶偏好設定
 
+![alt text](images/vprompt01.jpg)
+
 ## 環境需求
 - Python 3.8+
 - Google Gemini API Key
