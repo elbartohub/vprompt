@@ -313,20 +313,45 @@ def index():
                 except Exception as e:
                     print(f"[DEBUG] Gemini enhancement API error: {e}")
                     # Keep the original result if API call fails
+        
+        # 確保 result 總是有預設值，防止 KeyError
+        if 'result' not in locals() or result is None:
+            print("[DEBUG] No result available, using default empty fields.")
+            result = {
+                'Scene': '',
+                'ambiance_or_mood': '',
+                'Location': '',
+                'Visual style': '',
+                'camera motion': '',
+                'lighting': '',
+                'ending': ''
+            }
+        
+        # 確保 result 包含所有必要的鍵
+        default_keys = ['Scene', 'ambiance_or_mood', 'Location', 'Visual style', 'camera motion', 'lighting', 'ending']
+        for key in default_keys:
+            if key not in result:
+                result[key] = ''
+                print(f"[DEBUG] Added missing key '{key}' to result")
+        
         # 整合用戶選擇
         main_character = character if character != '其它' else custom_character
         def skip_custom(val):
             return '' if val == '用戶自定' else val
         def infer_or_value(val, field_name):
             return val if val else ''
+        def safe_get(dictionary, key, default=''):
+            """安全地從字典獲取值，避免 KeyError"""
+            return dictionary.get(key, default) if dictionary else default
+            
         prompt_json = {
-            'Scene': infer_or_value(skip_custom(result['Scene']), 'Scene'),
-            'ambiance_or_mood': infer_or_value(skip_custom(result['ambiance_or_mood']), 'ambiance_or_mood'),
-            'Location': infer_or_value(skip_custom(result['Location']), 'Location'),
-            'Visual style': infer_or_value(skip_custom(result['Visual style']), 'Visual style'),
-            'camera motion': infer_or_value(skip_custom(result['camera motion']), 'camera motion'),
-            'lighting': infer_or_value(skip_custom(result['lighting']), 'lighting'),
-            'ending': infer_or_value(skip_custom(result['ending']), 'ending'),
+            'Scene': infer_or_value(skip_custom(safe_get(result, 'Scene')), 'Scene'),
+            'ambiance_or_mood': infer_or_value(skip_custom(safe_get(result, 'ambiance_or_mood')), 'ambiance_or_mood'),
+            'Location': infer_or_value(skip_custom(safe_get(result, 'Location')), 'Location'),
+            'Visual style': infer_or_value(skip_custom(safe_get(result, 'Visual style')), 'Visual style'),
+            'camera motion': infer_or_value(skip_custom(safe_get(result, 'camera motion')), 'camera motion'),
+            'lighting': infer_or_value(skip_custom(safe_get(result, 'lighting')), 'lighting'),
+            'ending': infer_or_value(skip_custom(safe_get(result, 'ending')), 'ending'),
             'type': infer_or_value(prompt_type, 'type'),
             'time': infer_or_value(time, 'time'),
             'main_character': infer_or_value(skip_custom(main_character), 'main_character'),

@@ -27,15 +27,15 @@
 </head>
 <body>
     <div class="container">
-        <h1>vPrompt - 圖片/影片提示詞生成器</h1>
+        <h1>vPrompt - 提示詞生成器</h1>
         <form method="POST" enctype="multipart/form-data" id="promptForm">
-            <label>選擇提示類型：</label>
+            <label>提示詞類型：</label>
             <select name="prompt_type">
                 <option value="image" {% if prompt_type == 'image' %}selected{% endif %}>圖片</option>
                 <option value="video" {% if prompt_type == 'video' %}selected{% endif %}>影片</option>
             </select>
             <br>
-            <label>輸出語言：</label>
+            <label>語言：</label>
             <select name="output_lang">
                 <option value="en" {% if output_lang == 'en' %}selected{% endif %}>英語</option>
                 <option value="zh-tw" {% if output_lang == 'zh-tw' or output_lang == 'zh-TW' %}selected{% endif %}>繁體中文</option>
@@ -67,7 +67,7 @@
             </div>
             <input type="file" name="image" id="fileInput" accept="image/*,.heic,.heif" style="display:none;">
             <br>
-            <label>選擇時間：</label>
+            <label>時間：</label>
             <input type="time" name="time" min="00:00" max="23:59" value="{{ time }}">
             <br>
             <label>場景：</label>
@@ -90,8 +90,8 @@
             </select>
             <input type="text" name="custom_character" id="customCharacterInput" placeholder="例如：情侶、攝影師、學生、商人、藝術家、..." style="display:inline;" value="{{ custom_character }}">
             <br>
-            <label>額外描述：</label>
-            <input type="text" name="extra_desc" placeholder="描述風格、情緒、動作、運鏡、角度等... 例如：追蹤鏡頭、溫暖的陽光、復古風格、快樂的表情、低角度拍攝" value="{{ extra_desc }}">
+            <label>故事描述：</label>
+            <textarea name="extra_desc" placeholder="描述風格、情緒、動作、運鏡、角度等... 例如：追蹤鏡頭、溫暖的陽光、復古風格、快樂的表情、低角度拍攝" rows="3" style="width: 100%; resize: vertical;">{{ extra_desc }}</textarea>
             <br>
             <div class="tip" style="background-color: #f0f8ff; padding: 10px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #4CAF50;">
                 <strong>💡 提示：</strong>即使沒有上傳圖片，系統也會根據您選擇的場景、主角、時間和額外描述來生成豐富的提示詞！

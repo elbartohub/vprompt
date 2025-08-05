@@ -39,6 +39,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // 自動聚焦到故事描述欄位
+    const extraDescTextarea = document.querySelector('textarea[name="extra_desc"]');
+    if (extraDescTextarea) {
+        // 延遲一點時間再聚焦，確保頁面完全加載
+        setTimeout(function() {
+            extraDescTextarea.focus();
+            // 將光標移動到文本末尾
+            extraDescTextarea.setSelectionRange(extraDescTextarea.value.length, extraDescTextarea.value.length);
+        }, 100);
+    }
+
     // 表單送出時禁用按鈕，送出後自動滾動到結果區域
     const form = document.getElementById('promptForm');
     if (form) {
