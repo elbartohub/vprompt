@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify
+from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 # 假設 Gemini API 有官方 Python SDK
 # from gemini_flash_lite_sdk import GeminiClient
@@ -462,6 +462,98 @@ def index():
 def uploaded_file(filename):
     return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
+@app.route('/convert_heic/<filename>')
+def convert_heic(filename):
+    """Convert HEIC file to JPEG for preview"""
+    try:
+        import pillow_heif
+        from PIL import Image
+        import io
+        
+        # Register HEIF opener with Pillow
+        pillow_heif.register_heif_opener()
+        
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found'}), 404
+            
+        # Check if file is HEIC/HEIF
+        if not filename.lower().endswith(('.heic', '.heif')):
+            return jsonify({'error': 'Not a HEIC/HEIF file'}), 400
+            
+        # Open and convert HEIC to JPEG
+        with Image.open(file_path) as img:
+            # Convert to RGB if necessary
+            if img.mode not in ('RGB', 'L'):
+                img = img.convert('RGB')
+            
+            # Create thumbnail for preview (max 800x600)
+            img.thumbnail((800, 600), Image.Resampling.LANCZOS)
+            
+            # Save as JPEG to memory
+            img_io = io.BytesIO()
+            img.save(img_io, 'JPEG', quality=85, optimize=True)
+            img_io.seek(0)
+            
+            # Return as response
+            return send_file(
+                img_io,
+                mimetype='image/jpeg',
+                as_attachment=False,
+                download_name=f"{os.path.splitext(filename)[0]}_preview.jpg"
+            )
+            
+    except ImportError:
+        return jsonify({'error': 'HEIC support not available on server'}), 501
+    except Exception as e:
+        print(f"[ERROR] HEIC conversion failed: {e}")
+        return jsonify({'error': 'Conversion failed', 'details': str(e)}), 500
+
+@app.route('/heic_info/<filename>')
+def heic_info(filename):
+    """Get HEIC file information"""
+    try:
+        import pillow_heif
+        from PIL import Image
+        
+        # Register HEIF opener with Pillow
+        pillow_heif.register_heif_opener()
+        
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found'}), 404
+            
+        # Check if file is HEIC/HEIF
+        if not filename.lower().endswith(('.heic', '.heif')):
+            return jsonify({'error': 'Not a HEIC/HEIF file'}), 400
+            
+        # Get image info
+        with Image.open(file_path) as img:
+            info = {
+                'filename': filename,
+                'format': img.format,
+                'mode': img.mode,
+                'size': img.size,
+                'width': img.width,
+                'height': img.height,
+                'has_transparency': img.mode in ('RGBA', 'LA') or 'transparency' in img.info
+            }
+            
+            # Add EXIF data if available
+            try:
+                exif = img.getexif()
+                info['has_exif'] = len(exif) > 0
+            except:
+                info['has_exif'] = False
+                
+            return jsonify(info)
+            
+    except ImportError:
+        return jsonify({'error': 'HEIC support not available on server'}), 501
+    except Exception as e:
+        print(f"[ERROR] HEIC info extraction failed: {e}")
+        return jsonify({'error': 'Info extraction failed', 'details': str(e)}), 500
+
 @app.route('/download_prompt')
 def download_prompt():
     from flask import Response
@@ -511,6 +603,10 @@ def gemini_2_flash_api(image_path, api_key):
     return response.json()
 
 # Google Drive 分享功能略（需 OAuth 流程）
+
+@app.route('/test_heic.html')
+def test_heic():
+    return send_from_directory('.', 'test_heic.html')
 
 if __name__ == '__main__':
     # Configuration for network access

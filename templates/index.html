@@ -5,12 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>vPrompt - 圖片/影片提示詞生成器</title>
     <link rel="stylesheet" href="/static/style.css">
+    <!-- HEIC support library - using multiple CDN sources for reliability -->
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <script>
+        // Fallback check for heic2any library
+        if (typeof heic2any === 'undefined') {
+            console.warn('heic2any library failed to load from primary CDN, trying fallback...');
+            var script = document.createElement('script');
+            script.src = 'https://unpkg.com/heic2any@0.0.4/dist/heic2any.min.js';
+            script.onload = function() {
+                console.log('heic2any loaded successfully from fallback CDN');
+            };
+            script.onerror = function() {
+                console.error('Failed to load heic2any from both CDNs');
+            };
+            document.head.appendChild(script);
+        } else {
+            console.log('heic2any library loaded successfully from primary CDN');
+        }
+    </script>
 </head>
 <body>
     <div class="container">
         <h1>vPrompt - 圖片/影片提示詞生成器</h1>
         <form method="POST" enctype="multipart/form-data" id="promptForm">
-            <button type="button" id="resetBtn" style="margin-left:10px;">重設</button>
             <label>選擇提示類型：</label>
             <select name="prompt_type">
                 <option value="image" {% if prompt_type == 'image' %}selected{% endif %}>圖片</option>
@@ -112,7 +130,7 @@
             <button id="shareDriveBtn">分享至 Google Drive</button>
         </div>
     </div>
-    <script src="/static/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <script src="/static/script.js"></script>
 </body>
 </html>
