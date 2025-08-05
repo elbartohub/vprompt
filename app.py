@@ -96,7 +96,11 @@ def index():
     extra_desc = request.cookies.get('extra_desc', '')
     image_filename = request.cookies.get('image_filename', '')
     if image_filename:
-        image_url = url_for('uploaded_file', filename=image_filename)
+        # Check if the file is HEIC/HEIF and use conversion endpoint for display
+        if image_filename.lower().endswith(('.heic', '.heif')):
+            image_url = url_for('convert_heic', filename=image_filename)
+        else:
+            image_url = url_for('uploaded_file', filename=image_filename)
     else:
         image_url = None
     if request.method == 'POST':
@@ -130,7 +134,11 @@ def index():
                 filename = secure_filename(file.filename)
                 image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(image_path)
-                image_url = url_for('uploaded_file', filename=filename)
+                # Check if the file is HEIC/HEIF and use conversion endpoint for display
+                if filename.lower().endswith(('.heic', '.heif')):
+                    image_url = url_for('convert_heic', filename=filename)
+                else:
+                    image_url = url_for('uploaded_file', filename=filename)
                 image_filename = filename
                 print(f"[DEBUG] Image saved: {image_path}")
         # 圖片識別（Gemini 2.0 Flash HTTP API）
