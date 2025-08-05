@@ -24,7 +24,7 @@
 - 💾 **狀態記憶**：Cookie 技術記住用戶偏好設定
 
 ## 環境需求
-- Python 3.8+
+- Python 3.12
 - Google Gemini API Key
 
 ## 安裝步驟
