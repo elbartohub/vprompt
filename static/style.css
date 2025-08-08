@@ -2,6 +2,7 @@ body {
     background: linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%);
     font-family: 'Segoe UI', '微軟正黑體', Arial, sans-serif;
     color: #222;
+    font-size: 16px; /* Base font size increased */
 }
 
 /* Language Switcher Styles */
@@ -17,7 +18,7 @@ body {
     padding: 8px 16px;
     border-radius: 20px;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 1rem; /* Increased from 0.9rem */
     font-weight: bold;
     transition: all 0.3s ease;
     width: auto;
@@ -33,7 +34,7 @@ body {
 }
 
 .container {
-    max-width: 600px;
+    max-width: 1000px;
     margin: 40px auto;
     background: #fff;
     border-radius: 16px;
@@ -44,10 +45,12 @@ h1 {
     text-align: center;
     color: #6366f1;
     margin-bottom: 24px;
+    font-size: 2.2rem; /* Added larger font size */
 }
 label {
     font-weight: bold;
     margin-top: 12px;
+    font-size: 1.1rem; /* Increased from default */
 }
 input, select, textarea, button {
     margin: 8px 0;
@@ -56,13 +59,14 @@ input, select, textarea, button {
     border: 1px solid #cbd5e1;
     width: 100%;
     box-sizing: border-box;
+    font-size: 1.1rem; /* Increased font size for better readability */
 }
 button {
     background: #6366f1;
     color: #fff;
     border: none;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 1.2rem; /* Increased from 1rem */
     transition: background 0.2s;
 }
 button:hover {
@@ -82,7 +86,7 @@ img {
     margin: 10px 0;
     border-radius: 5px;
     border-left: 4px solid #4CAF50;
-    font-size: 0.9rem;
+    font-size: 1rem; /* Increased from 0.9rem */
     line-height: 1.4;
 }
 
@@ -98,7 +102,7 @@ img {
     padding: 8px 16px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 1rem; /* Increased from 0.9rem */
     transition: all 0.3s ease;
     display: inline-block;
     width: auto;
@@ -170,11 +174,12 @@ img {
 .drop-zone-text p {
     margin: 4px 0;
     color: #64748b;
+    font-size: 1rem; /* Added explicit font size */
 }
 
 .drop-zone-text p:first-child {
     color: #334155;
-    font-size: 1.1rem;
+    font-size: 1.2rem; /* Increased from 1.1rem */
 }
 
 .drop-zone-browse {
@@ -184,7 +189,7 @@ img {
 }
 
 .drop-zone-formats {
-    font-size: 0.85rem;
+    font-size: 0.95rem; /* Increased from 0.85rem */
     opacity: 0.8;
 }
 
@@ -483,13 +488,13 @@ img {
 }
 
 .creative-mode-title {
-    font-size: 1rem;
+    font-size: 1.1rem; /* Increased from 1rem */
     font-weight: 600;
     color: #6366f1;
 }
 
 .creative-mode-desc {
-    font-size: 0.85rem;
+    font-size: 0.95rem; /* Increased from 0.85rem */
     color: #64748b;
     font-weight: 400;
 }

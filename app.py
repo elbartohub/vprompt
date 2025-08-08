@@ -473,7 +473,11 @@ def index():
         ]
         for k in infer_keys:
             v = j.get(k, '')
-            if v and not v.startswith('[Please infer'):
+            # Convert to string if it's not already, then check
+            if v and isinstance(v, str) and not v.startswith('[Please infer'):
+                return False
+            elif v and not isinstance(v, str):
+                # If it's not a string and not empty, it's valid content
                 return False
         # type/image, time/00:00 可視為預設
         if j.get('type', '') != 'image':
