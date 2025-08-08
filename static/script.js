@@ -22,6 +22,11 @@ function setLanguage(lang) {
     // Update all elements with data attributes
     const elements = document.querySelectorAll('[data-en], [data-zh]');
     elements.forEach(element => {
+        // Skip icon buttons - they should remain text-free
+        if (element.classList.contains('icon-btn')) {
+            return;
+        }
+        
         if (lang === 'en' && element.hasAttribute('data-en')) {
             element.textContent = element.getAttribute('data-en');
         } else if (lang === 'zh' && element.hasAttribute('data-zh')) {
@@ -161,25 +166,46 @@ function fallbackCopyMethod(text, button, originalButtonText) {
 function showCopySuccess(button, originalButtonText) {
     if (!button) return;
     
-    const originalText = button.textContent;
-    const originalBgColor = button.style.backgroundColor;
-    const originalColor = button.style.color;
+    // Check if this is an icon button
+    const isIconButton = button.classList.contains('icon-btn');
     
-    // Show success status with bilingual text
-    const currentLang = document.documentElement.getAttribute('data-lang') || 'en';
-    const successText = currentLang === 'en' ? 'Copied!' : '已複製！';
-    
-    button.textContent = successText;
-    button.style.backgroundColor = '#4CAF50';
-    button.style.color = 'white';
-    button.style.transition = 'all 0.3s ease';
-    
-    // 2秒後恢復原始狀態
-    setTimeout(function() {
-        button.textContent = originalButtonText || originalText;
-        button.style.backgroundColor = originalBgColor;
-        button.style.color = originalColor;
-    }, 2000);
+    if (isIconButton) {
+        // For icon buttons, show visual feedback without changing text
+        const originalBgColor = button.style.backgroundColor;
+        const originalTransform = button.style.transform;
+        
+        // Show success status with color change and animation
+        button.style.backgroundColor = '#4CAF50';
+        button.style.transform = 'scale(1.1)';
+        button.style.transition = 'all 0.3s ease';
+        
+        // Restore original state after 1 second
+        setTimeout(function() {
+            button.style.backgroundColor = originalBgColor;
+            button.style.transform = originalTransform;
+        }, 1000);
+    } else {
+        // Original text-based feedback for regular buttons
+        const originalText = button.textContent;
+        const originalBgColor = button.style.backgroundColor;
+        const originalColor = button.style.color;
+        
+        // Show success status with bilingual text
+        const currentLang = document.documentElement.getAttribute('data-lang') || 'en';
+        const successText = currentLang === 'en' ? 'Copied!' : '已複製！';
+        
+        button.textContent = successText;
+        button.style.backgroundColor = '#4CAF50';
+        button.style.color = 'white';
+        button.style.transition = 'all 0.3s ease';
+        
+        // 2秒後恢復原始狀態
+        setTimeout(function() {
+            button.textContent = originalButtonText || originalText;
+            button.style.backgroundColor = originalBgColor;
+            button.style.color = originalColor;
+        }, 2000);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -302,8 +328,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const promptTextArea = document.getElementById('promptTextArea');
     if (copyTextBtn && promptTextArea) {
         copyTextBtn.addEventListener('click', function() {
-            const currentLang = document.documentElement.getAttribute('data-lang') || 'en';
-            const buttonText = currentLang === 'en' ? 'Copy All Text' : '複製全部文本';
+            // For icon buttons, don't pass any button text
+            const isIconButton = copyTextBtn.classList.contains('icon-btn');
+            const buttonText = isIconButton ? '' : (document.documentElement.getAttribute('data-lang') === 'en' ? 'Copy All Text' : '複製全部文本');
             copyToClipboard(promptTextArea.value, copyTextBtn, buttonText);
         });
     }
@@ -313,8 +340,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const promptJsonArea = document.getElementById('promptJsonArea');
     if (copyJsonBtn && promptJsonArea) {
         copyJsonBtn.addEventListener('click', function() {
-            const currentLang = document.documentElement.getAttribute('data-lang') || 'en';
-            const buttonText = currentLang === 'en' ? 'Copy JSON' : '複製 JSON';
+            // For icon buttons, don't pass any button text
+            const isIconButton = copyJsonBtn.classList.contains('icon-btn');
+            const buttonText = isIconButton ? '' : (document.documentElement.getAttribute('data-lang') === 'en' ? 'Copy JSON' : '複製 JSON');
             copyToClipboard(promptJsonArea.value, copyJsonBtn, buttonText);
         });
     }

@@ -115,6 +115,59 @@ img {
     box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
+/* Icon button specific styling */
+.icon-btn.copy-btn {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.4rem;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    margin: 0;
+    min-width: 44px;
+    min-height: 44px;
+    position: relative;
+}
+
+.icon-btn.copy-btn:hover {
+    background: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    scale: 1.05;
+}
+
+/* Alternative: CSS-based copy icon */
+.icon-btn.copy-btn::before {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border: 2px solid white;
+    border-radius: 2px;
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: transparent;
+}
+
+.icon-btn.copy-btn::after {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border: 2px solid white;
+    border-radius: 2px;
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: #10b981;
+    box-shadow: inset 0 0 0 2px #10b981;
+}
+
 /* Button container styling */
 .button-container {
     display: flex;
@@ -353,6 +406,14 @@ img {
         padding: 10px 12px;
         font-size: 0.9rem;
         width: 100%;
+    }
+    
+    /* Icon button mobile adjustments */
+    .icon-btn.copy-btn {
+        padding: 12px;
+        font-size: 1.5rem;
+        width: 100%;
+        min-height: 48px;
     }
     
     /* Textarea mobile optimization */

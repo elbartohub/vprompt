@@ -1,4 +1,7 @@
 import os
+import json
+import logging
+from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 # 假設 Gemini API 有官方 Python SDK
@@ -70,6 +73,86 @@ def get_default_camera_motion(prompt_type, scene, character):
     else:
         # Default cinematic motions
         return 'smooth tracking shot'
+
+def get_client_ip():
+    """Get the client's IP address from request headers"""
+    if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
+        return request.environ['REMOTE_ADDR']
+    else:
+        return request.environ['HTTP_X_FORWARDED_FOR'].split(',')[0].strip()
+
+def get_location_from_ip(ip_address):
+    """Get location information from IP address using a free API"""
+    try:
+        # Use a simple free IP geolocation service
+        response = requests.get(f'http://ip-api.com/json/{ip_address}', timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            if data['status'] == 'success':
+                return {
+                    'country': data.get('country', 'Unknown'),
+                    'region': data.get('regionName', 'Unknown'),
+                    'city': data.get('city', 'Unknown'),
+                    'timezone': data.get('timezone', 'Unknown'),
+                    'isp': data.get('isp', 'Unknown')
+                }
+    except Exception as e:
+        print(f"[DEBUG] Error getting location for IP {ip_address}: {str(e)}")
+    
+    return {
+        'country': 'Unknown',
+        'region': 'Unknown', 
+        'city': 'Unknown',
+        'timezone': 'Unknown',
+        'isp': 'Unknown'
+    }
+
+def log_user_interaction(user_inputs, prompt_result, prompt_json_result, uploaded_file_path=None):
+    """Log user interaction to JSON file"""
+    print(f"[DEBUG] log_user_interaction called with result length: {len(prompt_result) if prompt_result else 0}")
+    try:
+        # Create logs directory if it doesn't exist
+        log_dir = 'logs'
+        os.makedirs(log_dir, exist_ok=True)
+        
+        # Get client information
+        client_ip = get_client_ip()
+        location_info = get_location_from_ip(client_ip)
+        
+        # Create log entry
+        log_entry = {
+            'timestamp': datetime.now().isoformat(),
+            'client_ip': client_ip,
+            'location': location_info,
+            'user_inputs': user_inputs,
+            'prompt_result': prompt_result,
+            'prompt_json_result': prompt_json_result,
+            'uploaded_file_path': uploaded_file_path,
+            'user_agent': request.headers.get('User-Agent', 'Unknown')
+        }
+        
+        # Generate log filename with date
+        log_filename = f"user_interactions_{datetime.now().strftime('%Y-%m-%d')}.json"
+        log_filepath = os.path.join(log_dir, log_filename)
+        
+        # Read existing logs or create new list
+        if os.path.exists(log_filepath):
+            with open(log_filepath, 'r', encoding='utf-8') as f:
+                logs = json.load(f)
+        else:
+            logs = []
+        
+        # Add new log entry
+        logs.append(log_entry)
+        
+        # Write back to file
+        with open(log_filepath, 'w', encoding='utf-8') as f:
+            json.dump(logs, f, ensure_ascii=False, indent=2)
+        
+        print(f"[DEBUG] Logged user interaction to {log_filepath}")
+        
+    except Exception as e:
+        print(f"[DEBUG] Error logging user interaction: {str(e)}")
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -527,6 +610,32 @@ def index():
         resp.set_cookie('extra_desc', extra_desc if extra_desc is not None else '')
         resp.set_cookie('creative_mode', 'true' if creative_mode else 'false')
         # 不存 image_filename 於 cookies，避免跨 session 顯示已上傳圖片
+        
+        # Log user interaction if we have results
+        if prompt_text or prompt_json:
+            print(f"[DEBUG] Logging user interaction: prompt_text exists: {prompt_text is not None}, prompt_json exists: {prompt_json is not None}")
+            user_inputs = {
+                'prompt_type': prompt_type,
+                'output_lang': output_lang,
+                'time': time,
+                'scene': scene,
+                'custom_scene': custom_scene,
+                'character': character,
+                'custom_character': custom_character,
+                'extra_desc': extra_desc,
+                'creative_mode': creative_mode
+            }
+            
+            # Fix image_path scope issue - get it from the local context
+            uploaded_file_path = image_path if 'image_path' in locals() else None
+            
+            log_user_interaction(
+                user_inputs=user_inputs,
+                prompt_result=prompt_text,
+                prompt_json_result=prompt_json,
+                uploaded_file_path=uploaded_file_path
+            )
+    
     return resp
 
 @app.route('/uploads/<filename>')

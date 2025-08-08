@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-en="vPrompt - Image/Video Prompt Generator" data-zh="vPrompt - 圖片/影片提示詞生成器">vPrompt - Image/Video Prompt Generator</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=1.3">
     <!-- HEIC support library - using multiple CDN sources for reliability -->
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <script>
@@ -135,9 +135,10 @@
         <div>
             <h2 data-en="Complete Prompt (Text)" data-zh="完整提示詞（文本）">Complete Prompt (Text)</h2>
             <textarea id="promptTextArea" readonly style="width:100%;height:140px;">{{ prompt_text }}</textarea>
-            <div class="button-container">
-                <a href="/download_prompt?prompt={{ prompt_text }}" download data-en="Download Text" data-zh="下載文本">Download Text</a>
-                <button type="button" id="copyTextBtn" data-en="Copy All Text" data-zh="複製全部文本">Copy All Text</button>
+                        <div class="button-container">
+                <a href="/download_txt?prompt_text={{ prompt_text|urlencode }}" download data-en="Download TXT" data-zh="下載 TXT">Download TXT</a>
+                <button type="button" id="copyTextBtn" class="icon-btn copy-btn" title="Copy All Text">
+                </button>
             </div>
         </div>
         {% endif %}
@@ -147,7 +148,8 @@
             <textarea id="promptJsonArea" readonly style="width:100%;height:180px;">{{ prompt_json_str }}</textarea>
             <div class="button-container">
                 <a href="/download_json?prompt_json={{ prompt_json_str|urlencode }}" download data-en="Download JSON" data-zh="下載 JSON">Download JSON</a>
-                <button type="button" id="copyJsonBtn" data-en="Copy All JSON" data-zh="複製全部 JSON">Copy All JSON</button>
+                <button type="button" id="copyJsonBtn" class="icon-btn copy-btn" title="Copy All JSON">
+                </button>
             </div>
         </div>
         {% endif %}
