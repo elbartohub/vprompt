@@ -1,4 +1,4 @@
-# vPrompt
+# vPrompt - AI 創意提示詞生成器
 
 ## 功能簡介
 本專案主要完善影片或圖片生成所需的提示詞(Prompt)，包括支持 Veo3 的 Json 格式。vPrompt 是一個 Web 應用，讓用戶上傳圖片，選擇場景、主角、時間等，並用 Gemini 2.0 Flash API 生成創意的 Image/Video Prompt。支援多國語言輸出，Prompt 以文本和 JSON 顯示，並提供下載和複製功能。
