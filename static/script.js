@@ -186,6 +186,35 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize language system first
     initLanguageSystem();
     
+    // 檢查是否有結果並處理載入提示和滾動
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const hasResults = document.getElementById('promptTextArea') || document.getElementById('promptJsonArea');
+    
+    if (loadingIndicator) {
+        // 隱藏載入提示
+        loadingIndicator.style.display = 'none';
+    }
+    
+    // 如果有結果，自動滾動到結果區域
+    if (hasResults) {
+        setTimeout(function() {
+            // 找到第一個結果標題並滾動到該位置
+            const firstResultHeading = document.querySelector('h2, h3');
+            if (firstResultHeading) {
+                firstResultHeading.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            } else {
+                // 如果沒有找到標題，滾動到頁面底部
+                window.scrollTo({
+                    top: document.body.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        }, 300); // 給頁面一點時間完全加載
+    }
+    
     // 場景自定義欄位顯示
     const sceneSelect = document.getElementById('sceneSelect');
     const customSceneInput = document.getElementById('customSceneInput');
@@ -229,19 +258,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     }
 
-    // 表單送出時禁用按鈕，送出後自動滾動到結果區域
+    // 表單送出時禁用按鈕，顯示載入提示，並滾動到載入區域等待結果
     const form = document.getElementById('promptForm');
     if (form) {
         form.addEventListener('submit', function(e) {
             const submitBtn = form.querySelector('button[type="submit"]');
-            if (submitBtn) submitBtn.disabled = true;
-            setTimeout(function() {
-                submitBtn.disabled = false;
-                const resultBlock = document.querySelector('h2');
-                if (resultBlock) {
-                    resultBlock.scrollIntoView({behavior: 'smooth'});
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                
+                // 顯示載入提示
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'block';
+                    
+                    // 滾動到載入提示區域
+                    setTimeout(function() {
+                        loadingIndicator.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
+                    }, 100);
+                } else {
+                    // 如果沒有載入提示元素，滾動到頁面底部
+                    setTimeout(function() {
+                        window.scrollTo({
+                            top: document.body.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    }, 100);
                 }
-            }, 800);
+                
+                // 重新啟用按鈕（在頁面重新載入前不會執行到這裡）
+                setTimeout(function() {
+                    submitBtn.disabled = false;
+                }, 800);
+            }
         });
     }
 

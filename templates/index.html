@@ -116,6 +116,14 @@
             <br>
             <button type="submit" data-en="Generate Prompt" data-zh="生成提示詞">Generate Prompt</button>
         </form>
+        
+        <!-- Loading indicator -->
+        <div id="loadingIndicator" style="display: none; text-align: center; padding: 20px; margin: 20px 0; background-color: #f8f9fa; border-radius: 8px; border: 2px dashed #6366f1;">
+            <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+            <div style="font-size: 16px; font-weight: 500; color: #6366f1;" data-en="Generating your prompt..." data-zh="正在生成您的提示詞...">Generating your prompt...</div>
+            <div style="font-size: 14px; color: #666; margin-top: 5px;" data-en="Please wait while AI analyzes and creates your content..." data-zh="請稍候，AI 正在分析並創建您的內容...">Please wait while AI analyzes and creates your content...</div>
+        </div>
+        
         <hr>
         {% if image_url %}
         <div>
