@@ -110,40 +110,6 @@ FLASK_DEBUG=True
 ### Creative Mode 技術實現
 Creative Mode 透過進階的提示詞工程技術實現：
 
-#### 🔧 後端實現
-```python
-# Creative Mode 反物理元素增強提示詞
-if creative_mode:
-    prompt = f"""
-    CREATIVE MODE: Be highly creative, artistic, and experimental.
-    
-    ANTI-PHYSICS ELEMENTS to incorporate:
-    - Localized Gravitational Tides: Objects affected by warped gravity fields
-    - Transformation Systems: Matter state changes (liquid metal, particle reconstruction)
-    - Temporal Distortions: Time dilation zones, chronological anomalies
-    - Spatial Anomalies: Non-Euclidean geometry, dimensional rifts
-    - Elemental Violations: Water flowing upward, geometric fire patterns
-    - Light Manipulation: Solidified light beams, photon sculptures
-    
-    CAMERA MOTION with anti-physics:
-    - 'Gravity-defying orbital tracking through time-dilated space'
-    - 'Liquid mercury camera flow morphing through dimensional barriers'
-    - 'Particle-dissolution perspective shifts in gravitational tides'
-    - 'Quantum tunnel cinematography through folded reality'
-    
-    Make it visually stunning, emotionally powerful, and scientifically impossible.
-    """
-```
-
-#### 前端實現
-```javascript
-// Creative Mode 狀態管理
-document.getElementById('creativeMode').addEventListener('change', function() {
-    const isCreative = this.checked;
-    document.cookie = `creative_mode=${isCreative}; path=/; max-age=31536000`;
-});
-```
-
 ## 使用說明
 
 ### 基本使用流程
