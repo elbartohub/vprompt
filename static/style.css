@@ -3,6 +3,35 @@ body {
     font-family: 'Segoe UI', '微軟正黑體', Arial, sans-serif;
     color: #222;
 }
+
+/* Language Switcher Styles */
+.language-switcher {
+    text-align: right;
+    margin-bottom: 20px;
+}
+
+.lang-btn {
+    background: #f8fafc;
+    color: #6366f1;
+    border: 2px solid #6366f1;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    width: auto;
+    display: inline-block;
+    margin: 0;
+}
+
+.lang-btn:hover {
+    background: #6366f1;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
 .container {
     max-width: 600px;
     margin: 40px auto;
@@ -429,5 +458,76 @@ img {
         background: #10b981;
         transform: none;
         box-shadow: none;
+    }
+}
+
+/* Creative Mode Styling */
+.creative-mode-container {
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.creative-mode-container:hover {
+    border-color: #6366f1;
+    background-color: #f1f5f9 !important;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+}
+
+.creative-mode-label {
+    margin: 0;
+    user-select: none;
+}
+
+.creative-mode-text {
+    line-height: 1.4;
+}
+
+.creative-mode-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #6366f1;
+}
+
+.creative-mode-desc {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 400;
+}
+
+.creative-mode-container input[type="checkbox"] {
+    accent-color: #6366f1;
+    width: 18px;
+    height: 18px;
+}
+
+.creative-mode-container input[type="checkbox"]:checked + .creative-mode-text .creative-mode-title {
+    color: #4338ca;
+}
+
+.creative-mode-container input[type="checkbox"]:checked + .creative-mode-text .creative-mode-desc {
+    color: #475569;
+}
+
+/* Mobile optimizations for creative mode */
+@media screen and (max-width: 768px) {
+    .creative-mode-container {
+        margin: 12px 0;
+        padding: 10px;
+    }
+    
+    .creative-mode-title {
+        font-size: 0.95rem;
+    }
+    
+    .creative-mode-desc {
+        font-size: 0.8rem;
+        margin-top: 2px;
+        display: block;
+    }
+    
+    .creative-mode-container input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        margin-right: 12px;
     }
 }

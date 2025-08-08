@@ -1,16 +1,203 @@
+// Language switching functionality
+function initLanguageSystem() {
+    // Get saved language or default to English
+    const savedLang = localStorage.getItem('vPromptLanguage') || 'en';
+    setLanguage(savedLang);
+    
+    // Setup language toggle button
+    const langToggle = document.getElementById('langToggle');
+    if (langToggle) {
+        langToggle.addEventListener('click', function() {
+            const currentLang = document.documentElement.getAttribute('data-lang');
+            const newLang = currentLang === 'zh' ? 'en' : 'zh';
+            setLanguage(newLang);
+            localStorage.setItem('vPromptLanguage', newLang);
+        });
+    }
+}
+
+function setLanguage(lang) {
+    document.documentElement.setAttribute('data-lang', lang);
+    
+    // Update all elements with data attributes
+    const elements = document.querySelectorAll('[data-en], [data-zh]');
+    elements.forEach(element => {
+        if (lang === 'en' && element.hasAttribute('data-en')) {
+            element.textContent = element.getAttribute('data-en');
+        } else if (lang === 'zh' && element.hasAttribute('data-zh')) {
+            element.textContent = element.getAttribute('data-zh');
+        }
+    });
+    
+    // Update placeholders
+    const placeholderElements = document.querySelectorAll('[data-en-placeholder], [data-zh-placeholder]');
+    placeholderElements.forEach(element => {
+        if (lang === 'en' && element.hasAttribute('data-en-placeholder')) {
+            element.placeholder = element.getAttribute('data-en-placeholder');
+        } else if (lang === 'zh' && element.hasAttribute('data-zh-placeholder')) {
+            element.placeholder = element.getAttribute('data-zh-placeholder');
+        }
+    });
+    
+    // Update document title
+    const title = document.title;
+    const titleElement = document.querySelector('title');
+    if (titleElement) {
+        if (lang === 'en' && titleElement.hasAttribute('data-en')) {
+            document.title = titleElement.getAttribute('data-en');
+        } else if (lang === 'zh' && titleElement.hasAttribute('data-zh')) {
+            document.title = titleElement.getAttribute('data-zh');
+        }
+    }
+    
+    // Update language toggle button text
+    const langToggle = document.getElementById('langToggle');
+    if (langToggle) {
+        const toggleText = langToggle.querySelector('span');
+        if (toggleText) {
+            if (lang === 'zh') {
+                toggleText.textContent = '🇺🇸 EN';
+            } else {
+                toggleText.textContent = '🇹🇼 中文';
+            }
+        }
+    }
+    
+    // Update HTML lang attribute
+    if (lang === 'en') {
+        document.documentElement.setAttribute('lang', 'en');
+    } else {
+        document.documentElement.setAttribute('lang', 'zh-Hant');
+    }
+}
+
+// 跨平台複製到剪貼板功能 - 增強 Windows 11 Chrome 兼容性
+function copyToClipboard(text, button, originalButtonText) {
+    // 確保按鈕存在並且文本不為空
+    if (!text || !button) {
+        return false;
+    }
+
+    // 方法1: 嘗試使用現代 Clipboard API (適用於 HTTPS 和支援的瀏覽器)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        // 確保在安全上下文中或者是 localhost
+        if (window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+            navigator.clipboard.writeText(text).then(function() {
+                showCopySuccess(button, originalButtonText);
+            }).catch(function(err) {
+                console.warn('Clipboard API failed, trying fallback method:', err);
+                fallbackCopyMethod(text, button, originalButtonText);
+            });
+            return true;
+        }
+    }
+    
+    // 方法2: 降級到傳統方法
+    return fallbackCopyMethod(text, button, originalButtonText);
+}
+
+// 降級複製方法 - 使用傳統 DOM 操作
+function fallbackCopyMethod(text, button, originalButtonText) {
+    try {
+        // 創建臨時的隱藏 textarea 元素
+        const tempTextArea = document.createElement('textarea');
+        tempTextArea.value = text;
+        
+        // 設置樣式使其不可見但可選擇
+        tempTextArea.style.position = 'fixed';
+        tempTextArea.style.left = '-9999px';
+        tempTextArea.style.top = '-9999px';
+        tempTextArea.style.opacity = '0';
+        tempTextArea.style.pointerEvents = 'none';
+        tempTextArea.setAttribute('readonly', '');
+        
+        // 添加到 DOM
+        document.body.appendChild(tempTextArea);
+        
+        // 選擇文本
+        tempTextArea.focus();
+        tempTextArea.select();
+        tempTextArea.setSelectionRange(0, tempTextArea.value.length);
+        
+        // 執行複製命令
+        const successful = document.execCommand('copy');
+        
+        // 清理
+        document.body.removeChild(tempTextArea);
+        
+        if (successful) {
+            showCopySuccess(button, originalButtonText);
+            return true;
+        } else {
+            throw new Error('execCommand copy failed');
+        }
+    } catch (err) {
+        console.error('Fallback copy method failed:', err);
+        
+        // 最後的降級方案：提示用戶手動複製
+        try {
+            // 嘗試選擇原始文本區域(如果存在)
+            const textArea = document.getElementById('promptTextArea') || document.getElementById('promptJsonArea');
+            if (textArea && textArea.value === text) {
+                textArea.focus();
+                textArea.select();
+                textArea.setSelectionRange(0, textArea.value.length);
+            }
+        } catch (selectErr) {
+            console.error('Text selection failed:', selectErr);
+        }
+        
+        // Show manual copy prompt with bilingual message
+        const currentLang = document.documentElement.getAttribute('data-lang') || 'en';
+        const message = currentLang === 'en' 
+            ? 'Auto-copy failed, text is selected. Please press Ctrl+C (Windows) or Cmd+C (Mac) to copy manually'
+            : '自動複製失敗，文本已選中，請按 Ctrl+C (Windows) 或 Cmd+C (Mac) 手動複製';
+        alert(message);
+        return false;
+    }
+}
+
+// 顯示複製成功的視覺反饋
+function showCopySuccess(button, originalButtonText) {
+    if (!button) return;
+    
+    const originalText = button.textContent;
+    const originalBgColor = button.style.backgroundColor;
+    const originalColor = button.style.color;
+    
+    // Show success status with bilingual text
+    const currentLang = document.documentElement.getAttribute('data-lang') || 'en';
+    const successText = currentLang === 'en' ? 'Copied!' : '已複製！';
+    
+    button.textContent = successText;
+    button.style.backgroundColor = '#4CAF50';
+    button.style.color = 'white';
+    button.style.transition = 'all 0.3s ease';
+    
+    // 2秒後恢復原始狀態
+    setTimeout(function() {
+        button.textContent = originalButtonText || originalText;
+        button.style.backgroundColor = originalBgColor;
+        button.style.color = originalColor;
+    }, 2000);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize language system first
+    initLanguageSystem();
+    
     // 場景自定義欄位顯示
     const sceneSelect = document.getElementById('sceneSelect');
     const customSceneInput = document.getElementById('customSceneInput');
     if (sceneSelect && customSceneInput) {
         sceneSelect.addEventListener('change', function() {
-            customSceneInput.style.display = (sceneSelect.value === '其它') ? 'inline' : 'none';
-            if (sceneSelect.value === '其它') {
+            customSceneInput.style.display = (sceneSelect.value === '其它' || sceneSelect.value === 'Other') ? 'inline' : 'none';
+            if (sceneSelect.value === '其它' || sceneSelect.value === 'Other') {
                 customSceneInput.focus();
             }
         });
-        customSceneInput.style.display = (sceneSelect.value === '其它') ? 'inline' : 'none';
-        if (sceneSelect.value === '其它') {
+        customSceneInput.style.display = (sceneSelect.value === '其它' || sceneSelect.value === 'Other') ? 'inline' : 'none';
+        if (sceneSelect.value === '其它' || sceneSelect.value === 'Other') {
             customSceneInput.focus();
         }
     }
@@ -20,13 +207,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const customCharacterInput = document.getElementById('customCharacterInput');
     if (characterSelect && customCharacterInput) {
         characterSelect.addEventListener('change', function() {
-            customCharacterInput.style.display = (characterSelect.value === '其它') ? 'inline' : 'none';
-            if (characterSelect.value === '其它') {
+            customCharacterInput.style.display = (characterSelect.value === '其它' || characterSelect.value === 'Other') ? 'inline' : 'none';
+            if (characterSelect.value === '其它' || characterSelect.value === 'Other') {
                 customCharacterInput.focus();
             }
         });
-        customCharacterInput.style.display = (characterSelect.value === '其它') ? 'inline' : 'none';
-        if (characterSelect.value === '其它') {
+        customCharacterInput.style.display = (characterSelect.value === '其它' || characterSelect.value === 'Other') ? 'inline' : 'none';
+        if (characterSelect.value === '其它' || characterSelect.value === 'Other') {
             customCharacterInput.focus();
         }
     }
@@ -58,55 +245,25 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 複製文本功能
+    // 複製文本功能 - 增強跨平台兼容性
     const copyTextBtn = document.getElementById('copyTextBtn');
     const promptTextArea = document.getElementById('promptTextArea');
     if (copyTextBtn && promptTextArea) {
         copyTextBtn.addEventListener('click', function() {
-            navigator.clipboard.writeText(promptTextArea.value).then(function() {
-                // 臨時改變按鈕文字以顯示成功
-                const originalText = copyTextBtn.textContent;
-                copyTextBtn.textContent = '已複製！';
-                copyTextBtn.style.backgroundColor = '#4CAF50';
-                copyTextBtn.style.color = 'white';
-                
-                setTimeout(function() {
-                    copyTextBtn.textContent = originalText;
-                    copyTextBtn.style.backgroundColor = '';
-                    copyTextBtn.style.color = '';
-                }, 2000);
-            }).catch(function(err) {
-                // 降級方案：選擇文本
-                promptTextArea.select();
-                document.execCommand('copy');
-                alert('文本已複製到剪貼板');
-            });
+            const currentLang = document.documentElement.getAttribute('data-lang') || 'en';
+            const buttonText = currentLang === 'en' ? 'Copy All Text' : '複製全部文本';
+            copyToClipboard(promptTextArea.value, copyTextBtn, buttonText);
         });
     }
 
-    // 複製 JSON 功能
+    // 複製 JSON 功能 - 增強跨平台兼容性
     const copyJsonBtn = document.getElementById('copyJsonBtn');
     const promptJsonArea = document.getElementById('promptJsonArea');
     if (copyJsonBtn && promptJsonArea) {
         copyJsonBtn.addEventListener('click', function() {
-            navigator.clipboard.writeText(promptJsonArea.value).then(function() {
-                // 臨時改變按鈕文字以顯示成功
-                const originalText = copyJsonBtn.textContent;
-                copyJsonBtn.textContent = '已複製！';
-                copyJsonBtn.style.backgroundColor = '#4CAF50';
-                copyJsonBtn.style.color = 'white';
-                
-                setTimeout(function() {
-                    copyJsonBtn.textContent = originalText;
-                    copyJsonBtn.style.backgroundColor = '';
-                    copyJsonBtn.style.color = '';
-                }, 2000);
-            }).catch(function(err) {
-                // 降級方案：選擇文本
-                promptJsonArea.select();
-                document.execCommand('copy');
-                alert('JSON 已複製到剪貼板');
-            });
+            const currentLang = document.documentElement.getAttribute('data-lang') || 'en';
+            const buttonText = currentLang === 'en' ? 'Copy JSON' : '複製 JSON';
+            copyToClipboard(promptJsonArea.value, copyJsonBtn, buttonText);
         });
     }
 
@@ -244,13 +401,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
                 
                 if (!hasValidType && !hasValidExtension) {
-                    alert('請選擇支援的圖片文件格式（PNG、JPG、JPEG、GIF、HEIC）！');
+                    const currentLang = document.documentElement.getAttribute('data-lang') || 'en';
+                    const message = currentLang === 'en' 
+                        ? 'Please select a supported image format (PNG, JPG, JPEG, GIF, HEIC)!'
+                        : '請選擇支援的圖片文件格式（PNG、JPG、JPEG、GIF、HEIC）！';
+                    alert(message);
                     return;
                 }
 
                 // 檢查文件大小 (16MB)
                 if (file.size > 16 * 1024 * 1024) {
-                    alert('圖片文件大小不能超過 16MB！');
+                    const currentLang = document.documentElement.getAttribute('data-lang') || 'en';
+                    const message = currentLang === 'en' 
+                        ? 'Image file size cannot exceed 16MB!'
+                        : '圖片文件大小不能超過 16MB！';
+                    alert(message);
                     return;
                 }
 
