@@ -255,9 +255,9 @@ def index():
                         prompt_text_recog = f"Please identify this image in detail and output as JSON for VIDEO content: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting, ending. For 'camera motion', suggest CREATIVE and CINEMATIC camera movements that would work well for this scene (e.g., tracking shots, crane movements, handheld intimacy, drone shots, zooms, dollies, rotations). All responses must be in {prompt_lang}."
                 else:
                     if creative_mode:
-                        prompt_text_recog = f"Please identify this image in detail and output as JSON: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting, ending. CREATIVE MODE: Be highly artistic, experimental, and imaginative. Push creative boundaries with bold visual concepts, unconventional perspectives, and innovative storytelling approaches. All responses must be in {prompt_lang}."
+                        prompt_text_recog = f"Please identify this image in detail and output as JSON: Scene, ambiance_or_mood, Location, Visual style, lighting, ending. CREATIVE MODE: Be highly artistic, experimental, and imaginative. Push creative boundaries with bold visual concepts, unconventional perspectives, and innovative storytelling approaches. All responses must be in {prompt_lang}."
                     else:
-                        prompt_text_recog = f"Please identify this image in detail and output as JSON: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting, ending. All responses must be in {prompt_lang}."
+                        prompt_text_recog = f"Please identify this image in detail and output as JSON: Scene, ambiance_or_mood, Location, Visual style, lighting, ending. All responses must be in {prompt_lang}."
             else:
                 if prompt_type == 'video':
                     if creative_mode:
@@ -266,9 +266,9 @@ def index():
                         prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出影片內容：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting、ending。對於 'camera motion'，請根據場景建議富有創意和電影感的攝影機運動（例如：追蹤鏡頭、升降運動、手持親密感、空拍鏡頭、推拉鏡頭、移動推軌、旋轉等）。所有回應內容一律使用{prompt_lang}。"
                 else:
                     if creative_mode:
-                        prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting、ending。創意模式：請極具藝術性、實驗性和想像力。以大膽的視覺概念、非傳統的視角和創新的故事敘述方式突破創意界限。所有回應內容一律使用{prompt_lang}。"
+                        prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出：Scene、ambiance_or_mood、Location、Visual style、lighting、ending。創意模式：請極具藝術性、實驗性和想像力。以大膽的視覺概念、非傳統的視角和創新的故事敘述方式突破創意界限。所有回應內容一律使用{prompt_lang}。"
                     else:
-                        prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting、ending。所有回應內容一律使用{prompt_lang}。"
+                        prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出：Scene、ambiance_or_mood、Location、Visual style、lighting、ending。所有回應內容一律使用{prompt_lang}。"
             payload = {
                 "contents": [
                     {
@@ -308,7 +308,10 @@ def index():
             # 若 result 為 None，則用空欄位
             if not result:
                 print("[DEBUG] Using empty fields for image recognition result.")
-                result = {'Scene': '', 'ambiance_or_mood': '', 'Location': '', 'Visual style': '', 'camera motion': '', 'lighting': '', 'ending': ''}
+                if prompt_type == 'video':
+                    result = {'Scene': '', 'ambiance_or_mood': '', 'Location': '', 'Visual style': '', 'camera motion': '', 'lighting': '', 'ending': ''}
+                else:
+                    result = {'Scene': '', 'ambiance_or_mood': '', 'Location': '', 'Visual style': '', 'lighting': '', 'ending': ''}
         else:
             print("[DEBUG] No image uploaded, using user input for result.")
             # Create a more intelligent user input result
@@ -363,9 +366,9 @@ def index():
                             enhance_prompt = f"Based on these user inputs: {user_input_text}, please create a detailed JSON for VIDEO content with the following fields: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting, ending. For 'camera motion', create CREATIVE and CINEMATIC camera movements that enhance the storytelling (e.g., 'smooth tracking shot following the subject', 'dramatic crane shot revealing the landscape', 'intimate handheld close-up', 'sweeping drone shot', 'slow zoom into character's eyes', 'dynamic dolly push', 'rotating around subject', 'low-angle tracking', 'aerial establishing shot', etc.). Make the camera motion specific, cinematic, and emotionally engaging. Output in {prompt_lang} and format as valid JSON only."
                     else:
                         if creative_mode:
-                            enhance_prompt = f"Based on these user inputs: {user_input_text}, please create a detailed JSON with the following fields: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting, ending. CREATIVE MODE: Be highly artistic, experimental, and imaginative. Push creative boundaries with bold visual concepts, unconventional perspectives, surreal elements, and innovative storytelling approaches. Fill in missing fields with groundbreaking creative details. Output in {prompt_lang} and format as valid JSON only."
+                            enhance_prompt = f"Based on these user inputs: {user_input_text}, please create a detailed JSON with the following fields: Scene, ambiance_or_mood, Location, Visual style, lighting, ending. CREATIVE MODE: Be highly artistic, experimental, and imaginative. Push creative boundaries with bold visual concepts, unconventional perspectives, surreal elements, and innovative storytelling approaches. Fill in missing fields with groundbreaking creative details. Output in {prompt_lang} and format as valid JSON only."
                         else:
-                            enhance_prompt = f"Based on these user inputs: {user_input_text}, please create a detailed JSON with the following fields: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting, ending. Fill in creative and appropriate details for missing fields. Output in {prompt_lang} and format as valid JSON only."
+                            enhance_prompt = f"Based on these user inputs: {user_input_text}, please create a detailed JSON with the following fields: Scene, ambiance_or_mood, Location, Visual style, lighting, ending. Fill in creative and appropriate details for missing fields. Output in {prompt_lang} and format as valid JSON only."
                 else:
                     if prompt_type == 'video':
                         if creative_mode:
@@ -374,9 +377,9 @@ def index():
                             enhance_prompt = f"根據這些用戶輸入: {user_input_text}，請創建一個專為影片內容設計的詳細 JSON，包含以下欄位：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting、ending。對於 'camera motion' 欄位，請創造富有創意和電影感的攝影機運動，增強故事敘述效果（例如：'平滑追蹤鏡頭跟隨主體'、'戲劇性升降鏡頭展現風景'、'親密手持特寫'、'掃描式空拍鏡頭'、'緩慢推軌至角色眼部'、'動態移動推軌'、'環繞主體旋轉'、'低角度追蹤'、'航拍建立鏡頭'等）。讓攝影機運動具體、有電影感且富有情感張力。請用{prompt_lang}回應，並只輸出有效的 JSON 格式。"
                     else:
                         if creative_mode:
-                            enhance_prompt = f"根據這些用戶輸入: {user_input_text}，請創建一個詳細的 JSON，包含以下欄位：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting、ending。創意模式：請極具藝術性、實驗性和想像力。以大膽的視覺概念、非傳統的視角、超現實元素和創新的故事敘述方式突破創意界限。為缺少的欄位填入突破性的創意細節。請用{prompt_lang}回應，並只輸出有效的 JSON 格式。"
+                            enhance_prompt = f"根據這些用戶輸入: {user_input_text}，請創建一個詳細的 JSON，包含以下欄位：Scene、ambiance_or_mood、Location、Visual style、lighting、ending。創意模式：請極具藝術性、實驗性和想像力。以大膽的視覺概念、非傳統的視角、超現實元素和創新的故事敘述方式突破創意界限。為缺少的欄位填入突破性的創意細節。請用{prompt_lang}回應，並只輸出有效的 JSON 格式。"
                         else:
-                            enhance_prompt = f"根據這些用戶輸入: {user_input_text}，請創建一個詳細的 JSON，包含以下欄位：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting、ending。為缺少的欄位填入富有創意且合適的細節。請用{prompt_lang}回應，並只輸出有效的 JSON 格式。"
+                            enhance_prompt = f"根據這些用戶輸入: {user_input_text}，請創建一個詳細的 JSON，包含以下欄位：Scene、ambiance_or_mood、Location、Visual style、lighting、ending。為缺少的欄位填入富有創意且合適的細節。請用{prompt_lang}回應，並只輸出有效的 JSON 格式。"
                 
                 payload = {
                     "contents": [
@@ -409,8 +412,13 @@ def index():
                             try:
                                 enhanced_result = pyjson.loads(match.group())
                                 print(f"[DEBUG] Parsed enhanced result: {enhanced_result}")
-                                # Use enhanced result if parsing successful
-                                result = enhanced_result
+                                # Extract the content from nested structure if present
+                                if 'VIDEO' in enhanced_result:
+                                    result = enhanced_result['VIDEO']
+                                elif 'IMAGE' in enhanced_result:
+                                    result = enhanced_result['IMAGE']
+                                else:
+                                    result = enhanced_result
                             except Exception as e:
                                 print(f"[DEBUG] JSON parse error for enhancement: {e}")
                                 # Keep the original result if parsing fails
@@ -458,7 +466,6 @@ def index():
             'ambiance_or_mood': infer_or_value(skip_custom(safe_get(result, 'ambiance_or_mood')), 'ambiance_or_mood'),
             'Location': infer_or_value(skip_custom(safe_get(result, 'Location')), 'Location'),
             'Visual style': infer_or_value(skip_custom(safe_get(result, 'Visual style')), 'Visual style'),
-            'camera motion': infer_or_value(skip_custom(safe_get(result, 'camera motion')), 'camera motion'),
             'lighting': infer_or_value(skip_custom(safe_get(result, 'lighting')), 'lighting'),
             'ending': infer_or_value(skip_custom(safe_get(result, 'ending')), 'ending'),
             'type': infer_or_value(prompt_type, 'type'),
@@ -466,6 +473,11 @@ def index():
             'main_character': infer_or_value(skip_custom(main_character), 'main_character'),
             'extra_desc': infer_or_value(extra_desc, 'extra_desc')
         }
+        
+        # Only add camera motion for video prompts
+        if prompt_type == 'video':
+            prompt_json['camera motion'] = infer_or_value(skip_custom(safe_get(result, 'camera motion')), 'camera motion')
+        
         print(f"[DEBUG] prompt_json: {prompt_json}")
         # 交給 Gemini 重新組合 json 內容為一篇可讀性高的作品
         def time_to_chinese(tstr):
@@ -551,9 +563,17 @@ def index():
     def is_all_infer_or_default(j):
         if not j:
             return True
-        infer_keys = [
-            'Scene', 'ambiance_or_mood', 'Location', 'Visual style', 'camera motion', 'lighting', 'ending', 'main_character', 'extra_desc'
+        
+        # Define infer keys based on prompt type
+        base_infer_keys = [
+            'Scene', 'ambiance_or_mood', 'Location', 'Visual style', 'lighting', 'ending', 'main_character', 'extra_desc'
         ]
+        
+        # Add camera motion only for video prompts
+        infer_keys = base_infer_keys.copy()
+        if j.get('type') == 'video':
+            infer_keys.append('camera motion')
+        
         for k in infer_keys:
             v = j.get(k, '')
             # Convert to string if it's not already, then check
@@ -562,8 +582,10 @@ def index():
             elif v and not isinstance(v, str):
                 # If it's not a string and not empty, it's valid content
                 return False
-        # type/image, time/00:00 可視為預設
-        if j.get('type', '') != 'image':
+        
+        # Check if type and time are default values
+        prompt_type = j.get('type', '')
+        if prompt_type not in ['image', 'video']:
             return False
         if j.get('time', '') != '00:00':
             return False
