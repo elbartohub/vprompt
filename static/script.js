@@ -170,18 +170,18 @@ function showCopySuccess(button, originalButtonText) {
     const isIconButton = button.classList.contains('icon-btn');
     
     if (isIconButton) {
-        // For icon buttons, show visual feedback without changing text
-        const originalBgColor = button.style.backgroundColor;
+        // For icon buttons, show visual feedback without changing background color
         const originalTransform = button.style.transform;
+        const originalColor = button.style.color;
         
-        // Show success status with color change and animation
-        button.style.backgroundColor = '#4CAF50';
+        // Show success status with color change and animation only
+        button.style.color = '#4CAF50';
         button.style.transform = 'scale(1.1)';
         button.style.transition = 'all 0.3s ease';
         
         // Restore original state after 1 second
         setTimeout(function() {
-            button.style.backgroundColor = originalBgColor;
+            button.style.color = originalColor;
             button.style.transform = originalTransform;
         }, 1000);
     } else {

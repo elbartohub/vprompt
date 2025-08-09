@@ -74,8 +74,7 @@
             </div>
             <input type="file" name="image" id="fileInput" accept="image/*,.heic,.heif" style="display:none;">
             <br>
-            <label data-en="Time:" data-zh="時間：">Time:</label>
-            <input type="time" name="time" min="00:00" max="23:59" value="{{ time }}">
+            <label data-en="Time:" data-zh="時間：">Time:</label> <input type="time" name="time" min="00:00" max="23:59" value="{{ time }}">
             <br>
             <label data-en="Scene:" data-zh="場景：">Scene:</label>
             <select name="scene" id="sceneSelect">
@@ -85,19 +84,11 @@
             </select>
             <input type="text" name="custom_scene" id="customSceneInput" data-en-placeholder="e.g.: Forest, Beach, Cafe, Office..." data-zh-placeholder="例如：森林、海邊、咖啡廳、辦公室..." placeholder="e.g.: Forest, Beach, Cafe, Office..." style="display:inline;" value="{{ custom_scene }}">
             <br>
-            <label data-en="Character:" data-zh="主角：">Character:</label>
-            <select name="character" id="characterSelect">
-                <option value="男" {% if character == '男' %}selected{% endif %} data-en="Man" data-zh="男">Man</option>
-                <option value="男孩" {% if character == '男孩' %}selected{% endif %} data-en="Boy" data-zh="男孩">Boy</option>
-                <option value="老人（男）" {% if character == '老人（男）' %}selected{% endif %} data-en="Elderly Man" data-zh="老人（男）">Elderly Man</option>
-                <option value="女" {% if character == '女' %}selected{% endif %} data-en="Woman" data-zh="女">Woman</option>
-                <option value="女孩" {% if character == '女孩' %}selected{% endif %} data-en="Girl" data-zh="女孩">Girl</option>
-                <option value="老人（女）" {% if character == '老人（女）' %}selected{% endif %} data-en="Elderly Woman" data-zh="老人（女）">Elderly Woman</option>
-                <option value="其它" {% if character == '其它' or not character %}selected{% endif %} data-en="Other" data-zh="其它">Other</option>
-            </select>
-            <input type="text" name="custom_character" id="customCharacterInput" data-en-placeholder="e.g.: Couple, Photographer, Student, Businessman, Artist..." data-zh-placeholder="例如：情侶、攝影師、學生、商人、藝術家、..." placeholder="e.g.: Couple, Photographer, Student, Businessman, Artist..." style="display:inline;" value="{{ custom_character }}">
+            <div class="character-field-inline" style="display: block; margin: 8px 0;">
+                <label data-en="Character:" data-zh="主角：" style="display: inline !important; margin: 0 8px 0 0 !important; font-weight: bold;">Character:</label><select name="character" id="characterSelect" style="display: inline !important; width: auto !important; margin: 0 8px 0 0 !important;"><option value="男" {% if character == '男' %}selected{% endif %} data-en="Man" data-zh="男">Man</option><option value="男孩" {% if character == '男孩' %}selected{% endif %} data-en="Boy" data-zh="男孩">Boy</option><option value="老人（男）" {% if character == '老人（男）' %}selected{% endif %} data-en="Elderly Man" data-zh="老人（男）">Elderly Man</option><option value="女" {% if character == '女' %}selected{% endif %} data-en="Woman" data-zh="女">Woman</option><option value="女孩" {% if character == '女孩' %}selected{% endif %} data-en="Girl" data-zh="女孩">Girl</option><option value="老人（女）" {% if character == '老人（女）' %}selected{% endif %} data-en="Elderly Woman" data-zh="老人（女）">Elderly Woman</option><option value="其它" {% if character == '其它' or not character %}selected{% endif %} data-en="Other" data-zh="其它">Other</option></select><input type="text" name="custom_character" id="customCharacterInput" data-en-placeholder="e.g.: Couple, Photographer, Student, Businessman, Artist..." data-zh-placeholder="例如：情侶、攝影師、學生、商人、藝術家、..." placeholder="e.g.: Couple, Photographer, Student, Businessman, Artist..." style="display: inline !important; width: calc(100% - 200px) !important; margin: 0 !important; min-width: 200px;" value="{{ custom_character }}">
+            </div>
             <br>
-            <label data-en="Story Description:" data-zh="故事描述：">Share the thought:</label>
+            <label data-en="Share your thoughts:" data-zh="故事描述：">Share your thoughts:</label>
             <textarea name="extra_desc" data-en-placeholder="Describe style, mood, action, camera movement, angle, etc... e.g.: Tracking shot, warm sunlight, vintage style, happy expression, low angle shot" data-zh-placeholder="描述風格、情緒、動作、運鏡、角度等... 例如：追蹤鏡頭、溫暖的陽光、復古風格、快樂的表情、低角度拍攝" placeholder="Describe style, mood, action, camera movement, angle, etc... e.g.: Tracking shot, warm sunlight, vintage style, happy expression, low angle shot" rows="3" style="width: 100%; resize: vertical;">{{ extra_desc }}</textarea>
             <br>
             <div class="creative-mode-container" style="margin: 15px 0; padding: 12px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #6366f1;">
@@ -134,7 +125,7 @@
         {% if prompt_text %}
         <div>
             <h2 data-en="Complete Prompt (Text)" data-zh="完整提示詞（文本）">Complete Prompt (Text)</h2>
-            <textarea id="promptTextArea" readonly style="width:100%;height:140px;">{{ prompt_text }}</textarea>
+            <textarea id="promptTextArea" readonly style="width:100%;height:220px;">{{ prompt_text }}</textarea>
                         <div class="button-container">
                 <a href="/download_txt?prompt_text={{ prompt_text|urlencode }}" download data-en="Download TXT" data-zh="下載 TXT">Download TXT</a>
                 <button type="button" id="copyTextBtn" class="icon-btn copy-btn" title="Copy All Text">
