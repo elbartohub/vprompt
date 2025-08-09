@@ -139,7 +139,7 @@ function fallbackCopyMethod(text, button, originalButtonText) {
     } catch (err) {
         console.error('Fallback copy method failed:', err);
         
-        // 最後的降級方案：提示用戶手動複製
+        // 提示用戶手動複製
         try {
             // 嘗試選擇原始文本區域(如果存在)
             const textArea = document.getElementById('promptTextArea') || document.getElementById('promptJsonArea');
@@ -162,7 +162,7 @@ function fallbackCopyMethod(text, button, originalButtonText) {
     }
 }
 
-// 顯示複製成功的視覺反饋
+// 顯示複製成功
 function showCopySuccess(button, originalButtonText) {
     if (!button) return;
     
@@ -990,7 +990,7 @@ document.addEventListener('DOMContentLoaded', function() {
             dropZonePreview.style.display = 'flex';
         }
         
-        // 顯示錯誤佔位符的函數
+        // 顯示錯誤的函數
         function showErrorPlaceholder(file) {
             const canvas = document.createElement('canvas');
             canvas.width = 200;

@@ -161,7 +161,7 @@ def index():
     prompt_json_str = None
     image_url = None
     print("[DEBUG] Request method:", request.method)
-    # 讀取 cookie 預設值
+    # Read cookie 預設值
     prompt_type = request.cookies.get('prompt_type', 'image')
     output_lang = request.cookies.get('output_lang', 'en')
     # Handle zh-TW to zh-tw conversion for display consistency
@@ -348,7 +348,7 @@ def index():
                 
                 user_input_text = ", ".join(user_inputs)
                 
-                # Ask Gemini to enhance the user inputs
+                # Enhance the user inputs
                 api_key = os.getenv('GEMINI_API_KEY', 'YOUR_API_KEY')
                 url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
                 
@@ -488,7 +488,7 @@ def index():
             prompt_json['camera motion'] = infer_or_value(skip_custom(safe_get(result, 'camera motion')), 'camera motion')
         
         print(f"[DEBUG] prompt_json: {prompt_json}")
-        # 交給 Gemini 重新組合 json 內容為一篇可讀性高的作品
+        # 重新組合 json 內容為一篇可讀性高的作品
         def time_to_chinese(tstr):
             if not tstr or ':' not in tstr:
                 return ''
