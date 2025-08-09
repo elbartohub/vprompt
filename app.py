@@ -297,8 +297,15 @@ def index():
             match = re.search(r'\{[\s\S]*\}', text)
             if match:
                 try:
-                    result = pyjson.loads(match.group())
-                    print(f"[DEBUG] Parsed image recognition result: {result}")
+                    parsed_result = pyjson.loads(match.group())
+                    print(f"[DEBUG] Parsed image recognition result: {parsed_result}")
+                    # Extract the content from nested structure if present
+                    if 'VIDEO' in parsed_result:
+                        result = parsed_result['VIDEO']
+                    elif 'IMAGE' in parsed_result:
+                        result = parsed_result['IMAGE']
+                    else:
+                        result = parsed_result
                 except Exception as e:
                     print(f"[DEBUG] JSON parse error: {e}")
                     result = None
@@ -443,6 +450,8 @@ def index():
                 'lighting': '',
                 'ending': ''
             }
+        
+        print(f"[DEBUG] Result before key checking: {result}")
         
         # 確保 result 包含所有必要的鍵
         default_keys = ['Scene', 'ambiance_or_mood', 'Location', 'Visual style', 'camera motion', 'lighting', 'ending']
