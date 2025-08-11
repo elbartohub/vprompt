@@ -7,4 +7,5 @@ __pycache__/
 *.pyo
 *.pyd
 logs/
+view_log.py
 

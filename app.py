@@ -568,7 +568,7 @@ def index():
             prompt_text = ''
     import json
     prompt_json_str = None
-    # 僅在 prompt_json 有有效內容時才生成
+    # 僅在 prompt_json 有內容時才生成
     def is_all_infer_or_default(j):
         if not j:
             return True
