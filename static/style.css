@@ -724,3 +724,125 @@ input[name="custom_character"] {
         margin-top: 0 !important;
     }
 }
+
+/* Transition Mode Styling */
+.transition-mode-container {
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.transition-mode-container:hover {
+    border-color: #0ea5e9;
+    background-color: #f0f9ff !important;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
+}
+
+.transition-mode-label {
+    margin: 0;
+    user-select: none;
+}
+
+.transition-mode-text {
+    line-height: 1.4;
+}
+
+.transition-mode-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #0ea5e9;
+}
+
+.transition-mode-desc {
+    font-size: 0.95rem;
+    color: #64748b;
+    font-weight: 400;
+}
+
+.transition-mode-container input[type="checkbox"] {
+    accent-color: #0ea5e9;
+    width: 18px;
+    height: 18px;
+}
+
+.transition-mode-container input[type="checkbox"]:checked + .transition-mode-text .transition-mode-title {
+    color: #0284c7;
+}
+
+.transition-mode-container input[type="checkbox"]:checked + .transition-mode-text .transition-mode-desc {
+    color: #475569;
+}
+
+/* Multiple Scenes Mode Styling */
+.multiple-scenes-container {
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.multiple-scenes-container:hover {
+    border-color: #ef4444;
+    background-color: #fff5f5 !important;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.1);
+}
+
+.multiple-scenes-label {
+    margin: 0;
+    user-select: none;
+}
+
+.multiple-scenes-text {
+    line-height: 1.4;
+}
+
+.multiple-scenes-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #ef4444;
+}
+
+.multiple-scenes-desc {
+    font-size: 0.95rem;
+    color: #64748b;
+    font-weight: 400;
+}
+
+.multiple-scenes-container input[type="checkbox"] {
+    accent-color: #ef4444;
+    width: 18px;
+    height: 18px;
+}
+
+.multiple-scenes-container input[type="checkbox"]:checked + .multiple-scenes-text .multiple-scenes-title {
+    color: #dc2626;
+}
+
+.multiple-scenes-container input[type="checkbox"]:checked + .multiple-scenes-text .multiple-scenes-desc {
+    color: #475569;
+}
+
+/* Mobile optimizations for transition and multiple scenes modes */
+@media screen and (max-width: 768px) {
+    .transition-mode-container,
+    .multiple-scenes-container {
+        margin: 12px 0;
+        padding: 10px;
+    }
+    
+    .transition-mode-title,
+    .multiple-scenes-title {
+        font-size: 0.95rem;
+    }
+    
+    .transition-mode-desc,
+    .multiple-scenes-desc {
+        font-size: 0.8rem;
+        margin-top: 2px;
+        display: block;
+    }
+    
+    .transition-mode-container input[type="checkbox"],
+    .multiple-scenes-container input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        margin-right: 12px;
+    }
+}

@@ -178,6 +178,8 @@ def index():
     custom_character = request.cookies.get('custom_character', '')
     extra_desc = request.cookies.get('extra_desc', '')
     creative_mode = request.cookies.get('creative_mode', 'false') == 'true'
+    include_ending = request.cookies.get('include_ending', 'false') == 'true'
+    multiple_scenes = request.cookies.get('multiple_scenes', 'false') == 'true'
     image_filename = request.cookies.get('image_filename', '')
     if image_filename:
         # Check if the file is HEIC/HEIF and use conversion endpoint for display
@@ -203,10 +205,12 @@ def index():
         custom_character = request.form.get('custom_character')
         extra_desc = request.form.get('extra_desc')
         creative_mode = request.form.get('creative_mode') == 'true'
+        include_ending = request.form.get('include_ending') == 'true'
+        multiple_scenes = request.form.get('multiple_scenes') == 'true'
         file = request.files.get('image')
         image_path = None
         image_filename = ''
-        print(f"[DEBUG] Form data: time={time}, scene={scene}, custom_scene={custom_scene}, character={character}, custom_character={custom_character}, extra_desc={extra_desc}, creative_mode={creative_mode}, file={file.filename if file else None}")
+        print(f"[DEBUG] Form data: time={time}, scene={scene}, custom_scene={custom_scene}, character={character}, custom_character={custom_character}, extra_desc={extra_desc}, creative_mode={creative_mode}, include_ending={include_ending}, multiple_scenes={multiple_scenes}, file={file.filename if file else None}")
         # Always set cookies for scene and character, even if value is '其它' or empty
         # 若所有欄位皆空，直接清空結果
         if not any([prompt_type, output_lang, time, scene, custom_scene, character, custom_character, extra_desc, file]):
@@ -250,25 +254,25 @@ def index():
             if output_lang == 'en':
                 if prompt_type == 'video':
                     if creative_mode:
-                        prompt_text_recog = f"Please identify this image in detail and output as JSON for VIDEO content: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting, ending. CREATIVE MODE: Be highly creative, artistic, and experimental. For 'camera motion', suggest BOLD, INNOVATIVE, and CINEMATIC camera movements that push creative boundaries (e.g., 'surreal spiral descent around the subject', 'time-dilated tracking through ethereal spaces', 'gravity-defying orbital shots', 'dream-like morphing perspectives', 'kaleidoscopic rotation sequences', 'poetry-in-motion fluid transitions'). Make it visually stunning and emotionally powerful. All responses must be in {prompt_lang}."
+                        prompt_text_recog = f"Please identify this image in detail and output as JSON for VIDEO content: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting{', ending' if include_ending else ''}. CREATIVE MODE: Be highly creative, artistic, and experimental. For 'camera motion', suggest BOLD, INNOVATIVE, and CINEMATIC camera movements that push creative boundaries (e.g., 'surreal spiral descent around the subject', 'time-dilated tracking through ethereal spaces', 'gravity-defying orbital shots', 'dream-like morphing perspectives', 'kaleidoscopic rotation sequences', 'poetry-in-motion fluid transitions'). Make it visually stunning and emotionally powerful. All responses must be in {prompt_lang}."
                     else:
-                        prompt_text_recog = f"Please identify this image in detail and output as JSON for VIDEO content: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting, ending. For 'camera motion', suggest CREATIVE and CINEMATIC camera movements that would work well for this scene (e.g., tracking shots, crane movements, handheld intimacy, drone shots, zooms, dollies, rotations). All responses must be in {prompt_lang}."
+                        prompt_text_recog = f"Please identify this image in detail and output as JSON for VIDEO content: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting{', ending' if include_ending else ''}. For 'camera motion', suggest CREATIVE and CINEMATIC camera movements that would work well for this scene (e.g., tracking shots, crane movements, handheld intimacy, drone shots, zooms, dollies, rotations). All responses must be in {prompt_lang}."
                 else:
                     if creative_mode:
-                        prompt_text_recog = f"Please identify this image in detail and output as JSON: Scene, ambiance_or_mood, Location, Visual style, lighting, ending. CREATIVE MODE: Be highly artistic, experimental, and imaginative. Push creative boundaries with bold visual concepts, unconventional perspectives, and innovative storytelling approaches. All responses must be in {prompt_lang}."
+                        prompt_text_recog = f"Please identify this image in detail and output as JSON: Scene, ambiance_or_mood, Location, Visual style, lighting{', ending' if include_ending else ''}. CREATIVE MODE: Be highly artistic, experimental, and imaginative. Push creative boundaries with bold visual concepts, unconventional perspectives, and innovative storytelling approaches. All responses must be in {prompt_lang}."
                     else:
-                        prompt_text_recog = f"Please identify this image in detail and output as JSON: Scene, ambiance_or_mood, Location, Visual style, lighting, ending. All responses must be in {prompt_lang}."
+                        prompt_text_recog = f"Please identify this image in detail and output as JSON: Scene, ambiance_or_mood, Location, Visual style, lighting{', ending' if include_ending else ''}. All responses must be in {prompt_lang}."
             else:
                 if prompt_type == 'video':
                     if creative_mode:
-                        prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出影片內容：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting、ending。創意模式：請極具創意、藝術性和實驗性。對於 'camera motion'，請建議大膽、創新且具電影感的攝影機運動，突破創意界限（例如：'圍繞主體的超現實螺旋下降'、'穿越飄渺空間的時間延遲追蹤'、'反重力軌道鏡頭'、'夢幻般的變形視角'、'萬花筒式旋轉序列'、'詩意流動轉場'）。讓畫面視覺震撼且情感強烈。所有回應內容一律使用{prompt_lang}。"
+                        prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出影片內容：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting{'、ending' if include_ending else ''}。創意模式：請極具創意、藝術性和實驗性。對於 'camera motion'，請建議大膽、創新且具電影感的攝影機運動，突破創意界限（例如：'圍繞主體的超現實螺旋下降'、'穿越飄渺空間的時間延遲追蹤'、'反重力軌道鏡頭'、'夢幻般的變形視角'、'萬花筒式旋轉序列'、'詩意流動轉場'）。讓畫面視覺震撼且情感強烈。所有回應內容一律使用{prompt_lang}。"
                     else:
-                        prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出影片內容：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting、ending。對於 'camera motion'，請根據場景建議富有創意和電影感的攝影機運動（例如：追蹤鏡頭、升降運動、手持親密感、空拍鏡頭、推拉鏡頭、移動推軌、旋轉等）。所有回應內容一律使用{prompt_lang}。"
+                        prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出影片內容：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting{'、ending' if include_ending else ''}。對於 'camera motion'，請根據場景建議富有創意和電影感的攝影機運動（例如：追蹤鏡頭、升降運動、手持親密感、空拍鏡頭、推拉鏡頭、移動推軌、旋轉等）。所有回應內容一律使用{prompt_lang}。"
                 else:
                     if creative_mode:
-                        prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出：Scene、ambiance_or_mood、Location、Visual style、lighting、ending。創意模式：請極具藝術性、實驗性和想像力。以大膽的視覺概念、非傳統的視角和創新的故事敘述方式突破創意界限。所有回應內容一律使用{prompt_lang}。"
+                        prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出：Scene、ambiance_or_mood、Location、Visual style、lighting{'、ending' if include_ending else ''}。創意模式：請極具藝術性、實驗性和想像力。以大膽的視覺概念、非傳統的視角和創新的故事敘述方式突破創意界限。所有回應內容一律使用{prompt_lang}。"
                     else:
-                        prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出：Scene、ambiance_or_mood、Location、Visual style、lighting、ending。所有回應內容一律使用{prompt_lang}。"
+                        prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出：Scene、ambiance_or_mood、Location、Visual style、lighting{'、ending' if include_ending else ''}。所有回應內容一律使用{prompt_lang}。"
             payload = {
                 "contents": [
                     {
@@ -368,25 +372,33 @@ def index():
                 if output_lang == 'en':
                     if prompt_type == 'video':
                         if creative_mode:
-                            enhance_prompt = f"Based on these user inputs: {user_input_text}, please create a detailed JSON for VIDEO content with the following fields: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting, ending. CREATIVE MODE: Be highly artistic, experimental, and innovative. For 'camera motion', create BOLD, IMAGINATIVE, and UNCONVENTIONAL camera movements that push creative boundaries (e.g., 'surreal floating through impossible geometries', 'time-warped spiral dance around emotions', 'gravity-defying liquid mercury flows', 'dream-logic perspective morphing', 'cosmic zoom through consciousness layers', 'poetry-in-motion ethereal drifts', 'kaleidoscopic reality shifts'). Make it visually stunning, emotionally powerful, and artistically groundbreaking. Output in {prompt_lang} and format as valid JSON only."
+                            scene_instruction = "Create MULTIPLE connected scenes in a sequence" if multiple_scenes else "Create ONE single scene only"
+                            enhance_prompt = f"Based on these user inputs: {user_input_text}, please create a detailed JSON for VIDEO content with the following fields: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting{', ending' if include_ending else ''}. IMPORTANT: {scene_instruction}. For 'camera motion', choose ONLY ONE specific camera movement - do not combine multiple shots. Create ONE BOLD, IMAGINATIVE, and UNCONVENTIONAL camera movement that pushes creative boundaries (e.g., 'surreal floating through impossible geometries' OR 'time-warped spiral dance around emotions' OR 'gravity-defying liquid mercury flows' OR 'dream-logic perspective morphing' - pick just ONE). Make it visually stunning, emotionally powerful, and artistically groundbreaking. Output in {prompt_lang} and format as valid JSON only."
                         else:
-                            enhance_prompt = f"Based on these user inputs: {user_input_text}, please create a detailed JSON for VIDEO content with the following fields: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting, ending. For 'camera motion', create CREATIVE and CINEMATIC camera movements that enhance the storytelling (e.g., 'smooth tracking shot following the subject', 'dramatic crane shot revealing the landscape', 'intimate handheld close-up', 'sweeping drone shot', 'slow zoom into character's eyes', 'dynamic dolly push', 'rotating around subject', 'low-angle tracking', 'aerial establishing shot', etc.). Make the camera motion specific, cinematic, and emotionally engaging. Output in {prompt_lang} and format as valid JSON only."
+                            scene_instruction = "Create MULTIPLE connected scenes in a sequence" if multiple_scenes else "Create ONE single scene only"
+                            enhance_prompt = f"Based on these user inputs: {user_input_text}, please create a detailed JSON for VIDEO content with the following fields: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting{', ending' if include_ending else ''}. IMPORTANT: {scene_instruction}. For 'camera motion', choose ONLY ONE specific camera movement - do not combine multiple shots. Create ONE CREATIVE and CINEMATIC camera movement that enhances the storytelling (e.g., 'smooth tracking shot following the subject' OR 'dramatic crane shot revealing the landscape' OR 'intimate handheld close-up' OR 'sweeping drone shot' - pick just ONE). Make the camera motion specific, cinematic, and emotionally engaging. Output in {prompt_lang} and format as valid JSON only."
                     else:
                         if creative_mode:
-                            enhance_prompt = f"Based on these user inputs: {user_input_text}, please create a detailed JSON with the following fields: Scene, ambiance_or_mood, Location, Visual style, lighting, ending. CREATIVE MODE: Be highly artistic, experimental, and imaginative. Push creative boundaries with bold visual concepts, unconventional perspectives, surreal elements, and innovative storytelling approaches. Fill in missing fields with groundbreaking creative details. Output in {prompt_lang} and format as valid JSON only."
+                            scene_instruction = "Create MULTIPLE connected scenes in a sequence" if multiple_scenes else "Create ONE single scene only"
+                            enhance_prompt = f"Based on these user inputs: {user_input_text}, please create a detailed JSON with the following fields: Scene, ambiance_or_mood, Location, Visual style, lighting{', ending' if include_ending else ''}. IMPORTANT: {scene_instruction}. CREATIVE MODE: Be highly artistic, experimental, and imaginative. Push creative boundaries with bold visual concepts, unconventional perspectives, surreal elements, and innovative storytelling approaches. Fill in missing fields with groundbreaking creative details. Output in {prompt_lang} and format as valid JSON only."
                         else:
-                            enhance_prompt = f"Based on these user inputs: {user_input_text}, please create a detailed JSON with the following fields: Scene, ambiance_or_mood, Location, Visual style, lighting, ending. Fill in creative and appropriate details for missing fields. Output in {prompt_lang} and format as valid JSON only."
+                            scene_instruction = "Create MULTIPLE connected scenes in a sequence" if multiple_scenes else "Create ONE single scene only"
+                            enhance_prompt = f"Based on these user inputs: {user_input_text}, please create a detailed JSON with the following fields: Scene, ambiance_or_mood, Location, Visual style, lighting{', ending' if include_ending else ''}. IMPORTANT: {scene_instruction}. Fill in creative and appropriate details for missing fields. Output in {prompt_lang} and format as valid JSON only."
                 else:
                     if prompt_type == 'video':
                         if creative_mode:
-                            enhance_prompt = f"根據這些用戶輸入: {user_input_text}，請創建一個專為影片內容設計的詳細 JSON，包含以下欄位：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting、ending。創意模式：請極具藝術性、實驗性和創新性。對於 'camera motion' 欄位，請創造大膽、富有想像力且非傳統的攝影機運動，突破創意界限（例如：'穿越不可能幾何體的超現實漂浮'、'圍繞情感的時間扭曲螺旋舞蹈'、'反重力液態水銀流動'、'夢境邏輯視角變形'、'穿越意識層次的宇宙推拉'、'詩意運動的飄渺漂移'、'萬花筒般的現實轉換'）。讓它視覺震撼、情感強烈且藝術性突破。請用{prompt_lang}回應，並只輸出有效的 JSON 格式。"
+                            scene_instruction = "創建多個連續場景序列" if multiple_scenes else "只創建單一場景"
+                            enhance_prompt = f"根據這些用戶輸入: {user_input_text}，請創建一個專為影片內容設計的詳細 JSON，包含以下欄位：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting{'、ending' if include_ending else ''}。重要：{scene_instruction}。對於 'camera motion' 欄位，請只選擇一種特定的攝影機運動 - 不要組合多個鏡頭。創造一個大膽、富有想像力且非傳統的攝影機運動，突破創意界限（例如：'穿越不可能幾何體的超現實漂浮' 或 '圍繞情感的時間扭曲螺旋舞蹈' 或 '反重力液態水銀流動' 或 '夢境邏輯視角變形' - 只選擇其中一種）。讓它視覺震撼、情感強烈且藝術性突破。請用{prompt_lang}回應，並只輸出有效的 JSON 格式。"
                         else:
-                            enhance_prompt = f"根據這些用戶輸入: {user_input_text}，請創建一個專為影片內容設計的詳細 JSON，包含以下欄位：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting、ending。對於 'camera motion' 欄位，請創造富有創意和電影感的攝影機運動，增強故事敘述效果（例如：'平滑追蹤鏡頭跟隨主體'、'戲劇性升降鏡頭展現風景'、'親密手持特寫'、'掃描式空拍鏡頭'、'緩慢推軌至角色眼部'、'動態移動推軌'、'環繞主體旋轉'、'低角度追蹤'、'航拍建立鏡頭'等）。讓攝影機運動具體、有電影感且富有情感張力。請用{prompt_lang}回應，並只輸出有效的 JSON 格式。"
+                            scene_instruction = "創建多個連續場景序列" if multiple_scenes else "只創建單一場景"
+                            enhance_prompt = f"根據這些用戶輸入: {user_input_text}，請創建一個專為影片內容設計的詳細 JSON，包含以下欄位：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting{'、ending' if include_ending else ''}。重要：{scene_instruction}。對於 'camera motion' 欄位，請只選擇一種特定的攝影機運動 - 不要組合多個鏡頭。創造一個富有創意和電影感的攝影機運動，增強故事敘述效果（例如：'平滑追蹤鏡頭跟隨主體' 或 '戲劇性升降鏡頭展現風景' 或 '親密手持特寫' 或 '掃描式空拍鏡頭' - 只選擇其中一種）。讓攝影機運動具體、有電影感且富有情感張力。請用{prompt_lang}回應，並只輸出有效的 JSON 格式。"
                     else:
                         if creative_mode:
-                            enhance_prompt = f"根據這些用戶輸入: {user_input_text}，請創建一個詳細的 JSON，包含以下欄位：Scene、ambiance_or_mood、Location、Visual style、lighting、ending。創意模式：請極具藝術性、實驗性和想像力。以大膽的視覺概念、非傳統的視角、超現實元素和創新的故事敘述方式突破創意界限。為缺少的欄位填入突破性的創意細節。請用{prompt_lang}回應，並只輸出有效的 JSON 格式。"
+                            scene_instruction = "創建多個連續場景序列" if multiple_scenes else "只創建單一場景"
+                            enhance_prompt = f"根據這些用戶輸入: {user_input_text}，請創建一個詳細的 JSON，包含以下欄位：Scene、ambiance_or_mood、Location、Visual style、lighting{'、ending' if include_ending else ''}。重要：{scene_instruction}。創意模式：請極具藝術性、實驗性和想像力。以大膽的視覺概念、非傳統的視角、超現實元素和創新的故事敘述方式突破創意界限。為缺少的欄位填入突破性的創意細節。請用{prompt_lang}回應，並只輸出有效的 JSON 格式。"
                         else:
-                            enhance_prompt = f"根據這些用戶輸入: {user_input_text}，請創建一個詳細的 JSON，包含以下欄位：Scene、ambiance_or_mood、Location、Visual style、lighting、ending。為缺少的欄位填入富有創意且合適的細節。請用{prompt_lang}回應，並只輸出有效的 JSON 格式。"
+                            scene_instruction = "創建多個連續場景序列" if multiple_scenes else "只創建單一場景"
+                            enhance_prompt = f"根據這些用戶輸入: {user_input_text}，請創建一個詳細的 JSON，包含以下欄位：Scene、ambiance_or_mood、Location、Visual style、lighting{'、ending' if include_ending else ''}。重要：{scene_instruction}。為缺少的欄位填入富有創意且合適的細節。請用{prompt_lang}回應，並只輸出有效的 JSON 格式。"
                 
                 payload = {
                     "contents": [
@@ -454,7 +466,9 @@ def index():
         print(f"[DEBUG] Result before key checking: {result}")
         
         # 確保 result 包含所有必要的鍵
-        default_keys = ['Scene', 'ambiance_or_mood', 'Location', 'Visual style', 'camera motion', 'lighting', 'ending']
+        default_keys = ['Scene', 'ambiance_or_mood', 'Location', 'Visual style', 'camera motion', 'lighting']
+        if include_ending:
+            default_keys.append('ending')
         for key in default_keys:
             if key not in result:
                 result[key] = ''
@@ -476,12 +490,15 @@ def index():
             'Location': infer_or_value(skip_custom(safe_get(result, 'Location')), 'Location'),
             'Visual style': infer_or_value(skip_custom(safe_get(result, 'Visual style')), 'Visual style'),
             'lighting': infer_or_value(skip_custom(safe_get(result, 'lighting')), 'lighting'),
-            'ending': infer_or_value(skip_custom(safe_get(result, 'ending')), 'ending'),
             'type': infer_or_value(prompt_type, 'type'),
             'time': infer_or_value(time, 'time'),
             'main_character': infer_or_value(skip_custom(main_character), 'main_character'),
             'extra_desc': infer_or_value(extra_desc, 'extra_desc')
         }
+        
+        # Only add ending if user requested it
+        if include_ending:
+            prompt_json['ending'] = infer_or_value(skip_custom(safe_get(result, 'ending')), 'ending')
         
         # Only add camera motion for video prompts
         if prompt_type == 'video':
@@ -573,10 +590,14 @@ def index():
         if not j:
             return True
         
-        # Define infer keys based on prompt type
+        # Define infer keys based on prompt type and user preferences
         base_infer_keys = [
-            'Scene', 'ambiance_or_mood', 'Location', 'Visual style', 'lighting', 'ending', 'main_character', 'extra_desc'
+            'Scene', 'ambiance_or_mood', 'Location', 'Visual style', 'lighting', 'main_character', 'extra_desc'
         ]
+        
+        # Add ending only if user requested it
+        if 'ending' in j:
+            base_infer_keys.append('ending')
         
         # Add camera motion only for video prompts
         infer_keys = base_infer_keys.copy()
@@ -625,7 +646,9 @@ def index():
                                        character=character,
                                        custom_character=custom_character,
                                        extra_desc=extra_desc,
-                                       creative_mode=creative_mode))
+                                       creative_mode=creative_mode,
+                                       include_ending=include_ending,
+                                       multiple_scenes=multiple_scenes))
     if request.method == 'POST':
         if prompt_type is not None:
             resp.set_cookie('prompt_type', prompt_type)
@@ -640,6 +663,8 @@ def index():
         resp.set_cookie('custom_character', custom_character if custom_character is not None else '')
         resp.set_cookie('extra_desc', extra_desc if extra_desc is not None else '')
         resp.set_cookie('creative_mode', 'true' if creative_mode else 'false')
+        resp.set_cookie('include_ending', 'true' if include_ending else 'false')
+        resp.set_cookie('multiple_scenes', 'true' if multiple_scenes else 'false')
         # 不存 image_filename 於 cookies，避免跨 session 顯示已上傳圖片
         
         # Log user interaction if we have results
@@ -654,7 +679,9 @@ def index():
                 'character': character,
                 'custom_character': custom_character,
                 'extra_desc': extra_desc,
-                'creative_mode': creative_mode
+                'creative_mode': creative_mode,
+                'include_ending': include_ending,
+                'multiple_scenes': multiple_scenes
             }
             
             # Fix image_path scope issue - get it from the local context

@@ -91,12 +91,30 @@
             <label data-en="Share your thoughts:" data-zh="故事描述：">Share your thoughts:</label>
             <textarea name="extra_desc" data-en-placeholder="Describe style, mood, action, camera movement, angle, etc... e.g.: Tracking shot, warm sunlight, vintage style, happy expression, low angle shot" data-zh-placeholder="描述風格、情緒、動作、運鏡、角度等... 例如：追蹤鏡頭、溫暖的陽光、復古風格、快樂的表情、低角度拍攝" placeholder="Describe style, mood, action, camera movement, angle, etc... e.g.: Tracking shot, warm sunlight, vintage style, happy expression, low angle shot" rows="3" style="width: 100%; resize: vertical;">{{ extra_desc }}</textarea>
             <br>
-            <div class="creative-mode-container" style="margin: 15px 0; padding: 12px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #6366f1;">
+            <div class="creative-mode-container" style="margin: 15px 0; padding: 12px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #6366f1; margin-left: 0;">
                 <label class="creative-mode-label" style="display: flex; align-items: center; cursor: pointer; font-weight: 500;">
                     <input type="checkbox" name="creative_mode" id="creativeMode" value="true" {% if creative_mode %}checked{% endif %} style="margin-right: 10px; transform: scale(1.2);">
                     <span class="creative-mode-text">
                         <span class="creative-mode-title" data-en="🎨 Creative Mode" data-zh="🎨 創意模式">🎨 Creative Mode</span>
                         <span class="creative-mode-desc" data-en=" - Generate more artistic, experimental, and imaginative prompts with enhanced visual storytelling" data-zh=" - 生成更具藝術性、實驗性和想像力的提示詞，增強視覺故事敘述"> - Generate more artistic, experimental, and imaginative prompts with enhanced visual storytelling</span>
+                    </span>
+                </label>
+            </div>
+            <div class="transition-mode-container" style="margin: 15px 0; padding: 12px; background-color: #f0f9ff; border-radius: 8px; border-left: 4px solid #0ea5e9; margin-left: 0;">
+                <label class="transition-mode-label" style="display: flex; align-items: center; cursor: pointer; font-weight: 500;">
+                    <input type="checkbox" name="include_ending" id="includeEnding" value="true" {% if include_ending %}checked{% endif %} style="margin-right: 10px; transform: scale(1.2);">
+                    <span class="transition-mode-text">
+                        <span class="transition-mode-title" data-en="🎬 Include Scene Transition/Ending" data-zh="🎬 包含場景轉場/結尾">🎬 Include Scene Transition/Ending</span>
+                        <span class="transition-mode-desc" data-en=" - Add cinematic transitions, fade effects, or scene endings to the prompt" data-zh=" - 在提示詞中加入電影轉場、淡化效果或場景結尾"> - Add cinematic transitions, fade effects, or scene endings to the prompt</span>
+                    </span>
+                </label>
+            </div>
+            <div class="multiple-scenes-container" style="margin: 15px 0; padding: 12px; background-color: #fff5f5; border-radius: 8px; border-left: 4px solid #ef4444; margin-left: 0;">
+                <label class="multiple-scenes-label" style="display: flex; align-items: center; cursor: pointer; font-weight: 500;">
+                    <input type="checkbox" name="multiple_scenes" id="multipleScenes" value="true" {% if multiple_scenes %}checked{% endif %} style="margin-right: 10px; transform: scale(1.2);">
+                    <span class="multiple-scenes-text">
+                        <span class="multiple-scenes-title" data-en="🎭 Generate Multiple Scenes" data-zh="🎭 生成多個場景">🎭 Generate Multiple Scenes</span>
+                        <span class="multiple-scenes-desc" data-en=" - Create a sequence of multiple connected scenes instead of a single scene" data-zh=" - 創建多個連續場景序列，而非單一場景"> - Create a sequence of multiple connected scenes instead of a single scene</span>
                     </span>
                 </label>
             </div>
