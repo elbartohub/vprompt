@@ -10,13 +10,99 @@ import requests
 from dotenv import load_dotenv
 import base64
 from flask import make_response
+import threading
+import uuid
+import time
+
+# Add the `api` directory to the Python path
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'api'))
+from comfyui_client import ComfyUIClient  # Import ComfyUIClient from the `api` directory
+
+# In-memory job store for generation progress tracking
+generation_jobs = {}
+generation_jobs_lock = threading.Lock()
+
+# Import image generation integration
+try:
+    from api.vprompt_integration import generate_from_vprompt_dict
+    COMFYUI_AVAILABLE = True
+    print("[DEBUG] Image generation integration available")
+except ImportError as e:
+    try:
+        from api.simple_integration import generate_from_vprompt_dict
+        COMFYUI_AVAILABLE = True
+        print("[DEBUG] Using simple integration (mock mode)")
+    except ImportError as e2:
+        COMFYUI_AVAILABLE = False
+        print(f"[DEBUG] No image integration available: {e2}")
 
 UPLOAD_FOLDER = 'uploads'
+GENERATED_FOLDER = os.path.abspath('uploads/generated')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'heic', 'heif'}
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(GENERATED_FOLDER, exist_ok=True)
+
+# --- WS capture control (for capturing raw ComfyUI websocket messages) ---
+@app.route('/capture_ws_start', methods=['POST'])
+def capture_ws_start():
+    """Enable websocket message capture to a named file.
+
+    POST form params:
+      - filename: optional filename under GENERATED_FOLDER to write capture
+    """
+    filename = request.form.get('filename') or f"ws_capture_{int(time.time())}.log"
+    path = os.path.join(GENERATED_FOLDER, secure_filename(filename))
+    # Ensure file exists and is empty
+    open(path, 'w', encoding='utf-8').close()
+    try:
+        # Set globals in comfyui_client module
+        import importlib
+        cc = importlib.import_module('api.comfyui_client')
+        setattr(cc, 'WS_CAPTURE_ENABLED', True)
+        setattr(cc, 'WS_CAPTURE_PATH', path)
+        return jsonify({'capture_path': path}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/capture_ws_stop', methods=['POST'])
+def capture_ws_stop():
+    """Disable websocket capture and return the capture file path if present."""
+    try:
+        import importlib
+        cc = importlib.import_module('api.comfyui_client')
+        path = getattr(cc, 'WS_CAPTURE_PATH', None)
+        setattr(cc, 'WS_CAPTURE_ENABLED', False)
+        setattr(cc, 'WS_CAPTURE_PATH', None)
+        return jsonify({'capture_path': path}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/capture_ws_download')
+def capture_ws_download():
+    """Download the most recently written WS capture file if available."""
+    try:
+        import importlib
+        cc = importlib.import_module('api.comfyui_client')
+        path = getattr(cc, 'WS_CAPTURE_PATH', None)
+        # If path is None (capture stopped), look for last file in GENERATED_FOLDER
+        if not path:
+            files = [os.path.join(GENERATED_FOLDER, f) for f in os.listdir(GENERATED_FOLDER) if f.startswith('ws_capture_')]
+            if not files:
+                return jsonify({'error': 'No capture file found'}), 404
+            path = sorted(files, key=os.path.getmtime)[-1]
+        if not path or not os.path.exists(path):
+            return jsonify({'error': 'Capture file not found'}), 404
+        return send_file(path, as_attachment=True)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 load_dotenv()
 
@@ -107,7 +193,7 @@ def get_location_from_ip(ip_address):
         'isp': 'Unknown'
     }
 
-def log_user_interaction(user_inputs, prompt_result, prompt_json_result, uploaded_file_path=None):
+def log_user_interaction(user_inputs, prompt_result, prompt_json_result, uploaded_file_path=None, generated_images=None):
     """Log user interaction to JSON file"""
     print(f"[DEBUG] log_user_interaction called with result length: {len(prompt_result) if prompt_result else 0}")
     try:
@@ -128,6 +214,7 @@ def log_user_interaction(user_inputs, prompt_result, prompt_json_result, uploade
             'prompt_result': prompt_result,
             'prompt_json_result': prompt_json_result,
             'uploaded_file_path': uploaded_file_path,
+            'generated_images': generated_images,
             'user_agent': request.headers.get('User-Agent', 'Unknown')
         }
         
@@ -154,19 +241,88 @@ def log_user_interaction(user_inputs, prompt_result, prompt_json_result, uploade
     except Exception as e:
         print(f"[DEBUG] Error logging user interaction: {str(e)}")
 
+def handle_regenerate_request():
+    """Handle regenerate image request from edited JSON using async job system"""
+    try:
+        # Get the JSON data from the form
+        json_data_str = request.form.get('json_data')
+        if not json_data_str:
+            return jsonify({'error': 'No JSON data provided'}), 400
+
+        # Parse the JSON
+        try:
+            prompt_json = json.loads(json_data_str)
+            # Sanitize extra_desc if present
+            if 'extra_desc' in prompt_json and isinstance(prompt_json['extra_desc'], str):
+                # Replace multiple \r\n or \n with a single newline
+                import re
+                prompt_json['extra_desc'] = re.sub(r'(\r\n|\n){2,}', '\n', prompt_json['extra_desc'])
+        except json.JSONDecodeError as e:
+            return jsonify({'error': f'Invalid JSON format: {str(e)}'}), 400
+
+        # Get optional seed parameter
+        seed = None
+        seed_str = request.form.get('seed')
+        if seed_str:
+            try:
+                seed = int(seed_str)
+            except (ValueError, TypeError):
+                return jsonify({'error': 'Invalid seed value'}), 400
+
+        print(f"[DEBUG] Regenerating image from edited JSON: {prompt_json}")
+        if seed is not None:
+            print(f"[DEBUG] Using seed: {seed}")
+        # Debug: echo back received JSON in response for frontend confirmation
+        debug_echo = json.dumps(prompt_json, ensure_ascii=False, indent=2)
+
+        # Generate a unique job ID for the regenerate request
+        job_id = str(uuid.uuid4())
+
+        # Initialize the job in the global jobs dictionary
+        with generation_jobs_lock:
+            generation_jobs[job_id] = {
+                'status': 'pending',
+                'progress': 0,
+                'images': [],
+                'error': None,
+                'seed': seed
+            }
+
+        # Start background generation thread
+        thread = threading.Thread(target=_background_generate, args=(job_id, prompt_json, seed))
+        thread.daemon = True
+        thread.start()
+
+        # Return job ID for frontend to poll
+        return jsonify({
+            'job_id': job_id,
+            'message': 'Image regeneration started',
+            'seed': seed,
+            'debug_echo': debug_echo
+        }), 200
+
+    except Exception as e:
+        print(f"[DEBUG] Error in handle_regenerate_request: {e}")
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    prompt_text = None
+    # Initialize variables
+    prompt_text = ''
     prompt_json = None
-    prompt_json_str = None
+    prompt_json_str = ''
     image_url = None
+    image_path = None
+    file = None
+    generated_images = None
+    
     print("[DEBUG] Request method:", request.method)
-    # Read cookie 預設值
+    
+    # Read cookie defaults
     prompt_type = request.cookies.get('prompt_type', 'image')
     output_lang = request.cookies.get('output_lang', 'en')
     # Handle zh-TW to zh-tw conversion for display consistency
     output_lang_display = 'zh-tw' if output_lang == 'zh-TW' else output_lang
-    # 修正繁體中文選項，前端用 zh-tw，後端語言映射也需一致
     time = request.cookies.get('time', '16:00')
     scene = request.cookies.get('scene')
     if scene is None or scene == '':
@@ -181,6 +337,8 @@ def index():
     include_ending = request.cookies.get('include_ending', 'false') == 'true'
     multiple_scenes = request.cookies.get('multiple_scenes', 'false') == 'true'
     image_filename = request.cookies.get('image_filename', '')
+    bypass_time = request.cookies.get('bypass_time', 'true') == 'true'
+    
     if image_filename:
         # Check if the file is HEIC/HEIF and use conversion endpoint for display
         if image_filename.lower().endswith(('.heic', '.heif')):
@@ -189,7 +347,13 @@ def index():
             image_url = url_for('uploaded_file', filename=image_filename)
     else:
         image_url = None
+    
     if request.method == 'POST':
+        # Check if this is a regenerate action
+        action = request.form.get('action')
+        if action == 'regenerate':
+            return handle_regenerate_request()
+        
         prompt_type = request.form.get('prompt_type')
         output_lang = request.form.get('output_lang', 'en')
         print(f"[DEBUG] Form data: prompt_type={prompt_type}, output_lang={output_lang}")
@@ -198,7 +362,8 @@ def index():
         # 修正 zh-tw 映射
         if output_lang == 'zh-tw':
             output_lang = 'zh-TW'
-        time = request.form.get('time')
+        bypass_time = request.form.get('bypass_time', 'true') == 'true'
+        time = request.form.get('time') if not bypass_time else None
         scene = request.form.get('scene')
         custom_scene = request.form.get('custom_scene')
         character = request.form.get('character')
@@ -210,10 +375,20 @@ def index():
         file = request.files.get('image')
         image_path = None
         image_filename = ''
-        print(f"[DEBUG] Form data: time={time}, scene={scene}, custom_scene={custom_scene}, character={character}, custom_character={custom_character}, extra_desc={extra_desc}, creative_mode={creative_mode}, include_ending={include_ending}, multiple_scenes={multiple_scenes}, file={file.filename if file else None}")
-        # Always set cookies for scene and character, even if value is '其它' or empty
+
+        # Set cookies for extra_desc and bypass_time
+        resp = None
+        def set_cookie_response(html):
+            nonlocal resp
+            resp = make_response(html)
+            resp.set_cookie('extra_desc', extra_desc or '', max_age=60*60*24*30)
+            resp.set_cookie('bypass_time', str(bypass_time).lower(), max_age=60*60*24*30)
+            return resp
+        
+        print(f"[DEBUG] Form data: time={time}, bypass_time={bypass_time}, scene={scene}, custom_scene={custom_scene}, character={character}, custom_character={custom_character}, extra_desc={extra_desc}, creative_mode={creative_mode}, include_ending={include_ending}, multiple_scenes={multiple_scenes}, file={file.filename if file else None}")
+        
         # 若所有欄位皆空，直接清空結果
-        if not any([prompt_type, output_lang, time, scene, custom_scene, character, custom_character, extra_desc, file]):
+        if not any([prompt_type, output_lang, scene, custom_scene, character, custom_character, extra_desc, file]):
             print("[DEBUG] All fields empty, clearing result.")
             prompt_json = None
             prompt_text = ''
@@ -251,28 +426,16 @@ def index():
                 'es': 'Spanish'
             }
             prompt_lang = lang_map.get(output_lang, 'English')
-            if output_lang == 'en':
-                if prompt_type == 'video':
-                    if creative_mode:
-                        prompt_text_recog = f"Please identify this image in detail and output as JSON for VIDEO content: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting{', ending' if include_ending else ''}. CREATIVE MODE: Be highly creative, artistic, and experimental. For 'camera motion', suggest BOLD, INNOVATIVE, and CINEMATIC camera movements that push creative boundaries (e.g., 'surreal spiral descent around the subject', 'time-dilated tracking through ethereal spaces', 'gravity-defying orbital shots', 'dream-like morphing perspectives', 'kaleidoscopic rotation sequences', 'poetry-in-motion fluid transitions'). Make it visually stunning and emotionally powerful. All responses must be in {prompt_lang}."
-                    else:
-                        prompt_text_recog = f"Please identify this image in detail and output as JSON for VIDEO content: Scene, ambiance_or_mood, Location, Visual style, camera motion, lighting{', ending' if include_ending else ''}. For 'camera motion', suggest CREATIVE and CINEMATIC camera movements that would work well for this scene (e.g., tracking shots, crane movements, handheld intimacy, drone shots, zooms, dollies, rotations). All responses must be in {prompt_lang}."
+            if prompt_type == 'video':
+                if creative_mode:
+                    prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出影片內容：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting{'、ending' if include_ending else ''}。創意模式：請極具創意、藝術性和實驗性。對於 'camera motion'，請建議大膽、創新且具電影感的攝影機運動，突破創意界限（例如：'圍繞主體的超現實螺旋下降'、'穿越飄渺空間的時間延遲追蹤'、'反重力軌道鏡頭'、'夢幻般的變形視角'、'萬花筒式旋轉序列'、'詩意流動轉場'）。讓畫面視覺震撼且情感強烈。所有回應內容一律使用{prompt_lang}。"
                 else:
-                    if creative_mode:
-                        prompt_text_recog = f"Please identify this image in detail and output as JSON: Scene, ambiance_or_mood, Location, Visual style, lighting{', ending' if include_ending else ''}. CREATIVE MODE: Be highly artistic, experimental, and imaginative. Push creative boundaries with bold visual concepts, unconventional perspectives, and innovative storytelling approaches. All responses must be in {prompt_lang}."
-                    else:
-                        prompt_text_recog = f"Please identify this image in detail and output as JSON: Scene, ambiance_or_mood, Location, Visual style, lighting{', ending' if include_ending else ''}. All responses must be in {prompt_lang}."
+                    prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出影片內容：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting{'、ending' if include_ending else ''}。對於 'camera motion'，請根據場景建議富有創意和電影感的攝影機運動（例如：追蹤鏡頭、升降運動、手持親密感、空拍鏡頭、推拉鏡頭、移動推軌、旋轉等）。所有回應內容一律使用{prompt_lang}。"
             else:
-                if prompt_type == 'video':
-                    if creative_mode:
-                        prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出影片內容：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting{'、ending' if include_ending else ''}。創意模式：請極具創意、藝術性和實驗性。對於 'camera motion'，請建議大膽、創新且具電影感的攝影機運動，突破創意界限（例如：'圍繞主體的超現實螺旋下降'、'穿越飄渺空間的時間延遲追蹤'、'反重力軌道鏡頭'、'夢幻般的變形視角'、'萬花筒式旋轉序列'、'詩意流動轉場'）。讓畫面視覺震撼且情感強烈。所有回應內容一律使用{prompt_lang}。"
-                    else:
-                        prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出影片內容：Scene、ambiance_or_mood、Location、Visual style、camera motion、lighting{'、ending' if include_ending else ''}。對於 'camera motion'，請根據場景建議富有創意和電影感的攝影機運動（例如：追蹤鏡頭、升降運動、手持親密感、空拍鏡頭、推拉鏡頭、移動推軌、旋轉等）。所有回應內容一律使用{prompt_lang}。"
+                if creative_mode:
+                    prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出：Scene、ambiance_or_mood、Location、Visual style、lighting{'、ending' if include_ending else ''}。創意模式：請極具藝術性、實驗性和想像力。以大膽的視覺概念、非傳統的視角和創新的故事敘述方式突破創意界限。所有回應內容一律使用{prompt_lang}。"
                 else:
-                    if creative_mode:
-                        prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出：Scene、ambiance_or_mood、Location、Visual style、lighting{'、ending' if include_ending else ''}。創意模式：請極具藝術性、實驗性和想像力。以大膽的視覺概念、非傳統的視角和創新的故事敘述方式突破創意界限。所有回應內容一律使用{prompt_lang}。"
-                    else:
-                        prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出：Scene、ambiance_or_mood、Location、Visual style、lighting{'、ending' if include_ending else ''}。所有回應內容一律使用{prompt_lang}。"
+                    prompt_text_recog = f"請詳細識別這張圖片，並以 json 格式輸出：Scene、ambiance_or_mood、Location、Visual style、lighting{'、ending' if include_ending else ''}。所有回應內容一律使用{prompt_lang}。"
             payload = {
                 "contents": [
                     {
@@ -623,40 +786,91 @@ def index():
 
     valid_json = prompt_json and not is_all_infer_or_default(prompt_json)
     print(f"[DEBUG] valid_json: {valid_json}")
-    # 只要 prompt_text 有內容就顯示，不再強制清空
-    if valid_json:
-        prompt_json_str = json.dumps(prompt_json, ensure_ascii=False, indent=2)
-        print(f"[DEBUG] prompt_json_str: {prompt_json_str}")
+    
+    # Generate images automatically only when explicitly requested.
+    # We intentionally DO NOT start the image generation (which connects to ComfyUI/WebSocket)
+    # during the initial "Generate Prompt" POST so the user first sees the composed
+    # Complete Prompt and JSON for review/editing. Image generation will run only when
+    # the front-end triggers the regenerate action (which POSTs action=regenerate),
+    # or when the form includes auto_generate=true. Default is disabled to avoid
+    # starting WebSocket connections before the user confirms.
+    generated_images = None
+    auto_generate = request.form.get('auto_generate') == 'true'
+    if (COMFYUI_AVAILABLE and prompt_json and valid_json and auto_generate):
+        try:
+            print("[DEBUG] Starting automatic image generation...")
+            generated_image_paths = generate_from_vprompt_dict(
+                prompt_json, 
+                output_dir="./uploads/generated"
+            )
+            
+            if generated_image_paths:
+                print(f"[DEBUG] Generated {len(generated_image_paths)} images: {generated_image_paths}")
+            else:
+                print("[DEBUG] No images were generated")
+                generated_images = {"success": False, "error": "No images generated"}
+                
+        except Exception as e:
+            print(f"[DEBUG] Image generation failed: {str(e)}")
+            generated_images = {"success": False, "error": str(e)}
     else:
-        print("[DEBUG] No valid prompt_json, but keep prompt_text if present.")
-        prompt_json_str = None
-        # prompt_text 不清空，讓 UI 能顯示
-    print(f"[DEBUG] Final prompt_text: {prompt_text}")
-    # 設定 cookie
-    resp = make_response(render_template('index.html', 
-                                       prompt_text=prompt_text, 
-                                       prompt_json=prompt_json, 
-                                       prompt_json_str=prompt_json_str, 
-                                       image_url=image_url,
-                                       prompt_type=prompt_type,
-                                       output_lang=output_lang_display,
-                                       time=time,
-                                       scene=scene,
-                                       custom_scene=custom_scene,
-                                       character=character,
-                                       custom_character=custom_character,
-                                       extra_desc=extra_desc,
-                                       creative_mode=creative_mode,
-                                       include_ending=include_ending,
-                                       multiple_scenes=multiple_scenes))
+        if not COMFYUI_AVAILABLE:
+            print("[DEBUG] Image generation service not available, skipping image generation")
+        elif not prompt_json or not valid_json:
+            print("[DEBUG] No valid JSON prompt, skipping image generation")
+    
+    # Only show prompt_text and prompt_json after POST or AJAX
     if request.method == 'POST':
+        if valid_json:
+            prompt_json_str = json.dumps(prompt_json, ensure_ascii=False, indent=2)
+            print(f"[DEBUG] prompt_json_str: {prompt_json_str}")
+        else:
+            print("[DEBUG] No valid prompt_json, but keep prompt_text if present.")
+            prompt_json_str = None
+        print(f"[DEBUG] Final prompt_text: {prompt_text}")
+        print(f"[DEBUG] Passing to template: prompt_text={prompt_text is not None}, prompt_json={prompt_json is not None}, prompt_json_str={prompt_json_str is not None}, image_url={image_url}, generated_images={generated_images}")
+    else:
+        prompt_text = ''
+        prompt_json = None
+        prompt_json_str = ''
+
+    # Prepare template context
+    context = dict(
+        prompt_text=prompt_text if prompt_text else '',
+        prompt_json=prompt_json if prompt_json else None,
+        prompt_json_str=prompt_json_str if prompt_json_str else '',
+        image_url=image_url if image_url else '',
+        generated_images=generated_images if generated_images else None,
+        prompt_type=prompt_type,
+        output_lang=output_lang_display,
+        time=time,
+        scene=scene,
+        custom_scene=custom_scene,
+        character=character,
+        custom_character=custom_character,
+        extra_desc=extra_desc,
+        creative_mode=creative_mode,
+        include_ending=include_ending,
+        multiple_scenes=multiple_scenes,
+        seed=locals().get('seed', None)
+    )
+
+    # Decide whether to render full page or only results fragment for AJAX
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    if is_ajax and request.method == 'POST':
+        resp = make_response(render_template('_results.html', **context))
+    else:
+        resp = make_response(render_template('index.html', **context))
+
+    # Set cookies for POST
+    if request.method == 'POST':
+        # Only store user input values, not rendered content
         if prompt_type is not None:
             resp.set_cookie('prompt_type', prompt_type)
         if output_lang is not None:
             resp.set_cookie('output_lang', output_lang_display)
         if time is not None:
             resp.set_cookie('time', time)
-        # Always set scene and character cookies, even if value is '其它' or empty
         resp.set_cookie('scene', scene if scene is not None else '')
         resp.set_cookie('custom_scene', custom_scene if custom_scene is not None else '')
         resp.set_cookie('character', character if character is not None else '')
@@ -665,8 +879,8 @@ def index():
         resp.set_cookie('creative_mode', 'true' if creative_mode else 'false')
         resp.set_cookie('include_ending', 'true' if include_ending else 'false')
         resp.set_cookie('multiple_scenes', 'true' if multiple_scenes else 'false')
-        # 不存 image_filename 於 cookies，避免跨 session 顯示已上傳圖片
-        
+        resp.set_cookie('bypass_time', str(bypass_time).lower())
+
         # Log user interaction if we have results
         if prompt_text or prompt_json:
             print(f"[DEBUG] Logging user interaction: prompt_text exists: {prompt_text is not None}, prompt_json exists: {prompt_json is not None}")
@@ -683,22 +897,287 @@ def index():
                 'include_ending': include_ending,
                 'multiple_scenes': multiple_scenes
             }
-            
+
             # Fix image_path scope issue - get it from the local context
             uploaded_file_path = image_path if 'image_path' in locals() else None
-            
+
             log_user_interaction(
                 user_inputs=user_inputs,
                 prompt_result=prompt_text,
                 prompt_json_result=prompt_json,
-                uploaded_file_path=uploaded_file_path
+                uploaded_file_path=uploaded_file_path,
+                generated_images=generated_images
             )
-    
+
     return resp
+
+
+def _background_generate(job_id, prompt_json, seed=None):
+    """Background worker that runs image generation without progress tracking."""
+    logger = logging.getLogger(__name__)
+    logger.info("Background generate started for job %s", job_id)
+
+    try:
+        # Set initial status to processing
+        with generation_jobs_lock:
+            generation_jobs[job_id]['status'] = 'processing'
+            generation_jobs[job_id]['progress'] = 0
+
+        # Call the actual generation function (this may take time)
+        generated_paths = []
+
+        logger.info("Job %s: COMFYUI_AVAILABLE = %s", job_id, COMFYUI_AVAILABLE)
+
+        if COMFYUI_AVAILABLE:
+            # Call integration function without progress callback to avoid blocking
+            try:
+                logger.info("Job %s: Calling generate_from_vprompt_dict with progress tracking", job_id)
+                
+                # Define progress callback to update job progress
+                def update_progress(progress_percent):
+                    try:
+                        with generation_jobs_lock:
+                            if job_id in generation_jobs:
+                                generation_jobs[job_id]['progress'] = progress_percent
+                                logger.debug("Job %s progress updated to %d%%", job_id, progress_percent)
+                    except Exception as e:
+                        logger.debug("Failed to update progress for job %s: %s", job_id, e)
+                
+                generated_paths = generate_from_vprompt_dict(
+                    prompt_json,
+                    output_dir=GENERATED_FOLDER,
+                    seed=seed,
+                    progress_callback=update_progress
+                )
+                logger.info("Job %s generation completed, result: %s", job_id, generated_paths)
+            except Exception as e:
+                logger.exception("Generation failed for job %s: %s", job_id, e)
+                with generation_jobs_lock:
+                    generation_jobs[job_id]['status'] = 'error'
+                    generation_jobs[job_id]['error'] = str(e)
+                return
+        else:
+            # Simulate generation fallback
+            logger.info("ComfyUI not available, simulating generation")
+            time.sleep(2)  # Simple delay instead of progress updates
+            generated_paths = []
+
+        logger.info("Job %s generation completed, saving results", job_id)
+
+        # Save results
+        images_info = []
+        if not generated_paths:
+            logger.warning("Job %s: No generated paths returned", job_id)
+            generated_paths = []
+        else:
+            logger.info("Job %s: Generated paths: %s", job_id, generated_paths)
+
+        # Always add image info if a path is returned, bypass existence check
+        for img_path in generated_paths:
+            filename = os.path.basename(img_path)
+            images_info.append({
+                'filename': filename,
+                'url': f"/uploads/generated/{filename}",
+                'path': img_path
+            })
+
+        # Only set job status to done if all images exist
+        if not generated_paths:
+            logger.warning(f"[IMAGE DEBUG] Job {job_id}: No generated paths returned, setting status to error")
+            with generation_jobs_lock:
+                generation_jobs[job_id]['status'] = 'error'
+                generation_jobs[job_id]['error'] = 'No image paths returned after generation.'
+                generation_jobs[job_id]['progress'] = 100
+                generation_jobs[job_id]['images'] = images_info
+        else:
+            logger.info("Job %s processed %d images, setting status to done", job_id, len(images_info))
+            try:
+                with generation_jobs_lock:
+                    old_progress = generation_jobs[job_id]['progress']
+                    generation_jobs[job_id]['progress'] = 100
+                    generation_jobs[job_id]['status'] = 'done'
+                    generation_jobs[job_id]['images'] = images_info
+                    logger.info("Job %s completion: progress %d%% -> 100%%, status set to done", job_id, old_progress)
+            except Exception as e:
+                logger.exception("Error setting job completion status for job %s: %s", job_id, e)
+                # Try to set error status
+                with generation_jobs_lock:
+                    generation_jobs[job_id]['status'] = 'error'
+                    generation_jobs[job_id]['error'] = f"Completion error: {str(e)}"
+
+        logger.info("Job %s processed %d images, setting status to done", job_id, len(images_info))
+
+        try:
+            with generation_jobs_lock:
+                old_progress = generation_jobs[job_id]['progress']
+                generation_jobs[job_id]['progress'] = 100
+                generation_jobs[job_id]['status'] = 'done'
+                generation_jobs[job_id]['images'] = images_info
+                logger.info("Job %s completion: progress %d%% -> 100%%, status set to done", job_id, old_progress)
+        except Exception as e:
+            logger.exception("Error setting job completion status for job %s: %s", job_id, e)
+            # Try to set error status
+            with generation_jobs_lock:
+                generation_jobs[job_id]['status'] = 'error'
+                generation_jobs[job_id]['error'] = f"Completion error: {str(e)}"
+
+        logger.info("Job %s marked done, %d images", job_id, len(images_info))
+
+    except Exception as e:
+        logger.exception("Unhandled error in background_generate for job %s: %s", job_id, e)
+        with generation_jobs_lock:
+            generation_jobs[job_id]['status'] = 'error'
+            generation_jobs[job_id]['error'] = str(e)
+
+
+@app.route('/start_generation', methods=['POST'])
+def start_generation():
+    try:
+        # Get the JSON data from the request - handle both JSON and FormData
+        json_data = None
+        if request.is_json:
+            json_data = request.get_json()
+        else:
+            # Handle FormData
+            json_data_str = request.form.get('json_data')
+            if json_data_str:
+                json_data = json.loads(json_data_str)
+
+        if not json_data:
+            return jsonify({"error": "No JSON data provided"}), 400
+
+        # Get optional seed parameter
+        seed = None
+        if request.is_json:
+            json_data_req = request.get_json(silent=True)
+            if json_data_req and 'seed' in json_data_req:
+                seed = json_data_req.get('seed')
+        else:
+            seed_str = request.form.get('seed')
+            if seed_str:
+                try:
+                    seed = int(seed_str)
+                except (ValueError, TypeError):
+                    return jsonify({"error": "Invalid seed value"}), 400
+
+        # Generate a unique job ID
+        job_id = str(uuid.uuid4())
+
+        # Initialize the job in the global jobs dictionary
+        with generation_jobs_lock:
+            generation_jobs[job_id] = {
+                'status': 'pending',
+                'progress': 0,
+                'images': [],
+                'error': None,
+                'seed': seed,  # Store seed for reference
+                'prompt_json': json_data  # Store prompt for debug/log
+            }
+
+        # Start background generation thread
+        thread = threading.Thread(target=_background_generate, args=(job_id, json_data, seed))
+        thread.daemon = True
+        thread.start()
+
+        # Return the job ID immediately
+        return jsonify({"job_id": job_id, "seed": seed}), 200
+
+    except json.JSONDecodeError as e:
+        logger = logging.getLogger(__name__)
+        logger.exception("Error in start_generation")
+        return jsonify({"error": f"Invalid JSON format: {str(e)}"}), 400
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.exception("Error in start_generation")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/generation_status/<job_id>')
+def generation_status(job_id):
+    logger = logging.getLogger(__name__)
+    with generation_jobs_lock:
+        job = generation_jobs.get(job_id)
+    if job:
+        logger.debug("Status request for job %s: %s", job_id, job.get('status'))
+    if not job:
+        return jsonify({'error': 'Job not found'}), 404
+    
+    resp_dict = {
+        'status': job['status'],
+        'progress': job['progress'],
+        'error': job.get('error'),
+        'prompt_json': job.get('prompt_json')
+    }
+    # If job is done, include images
+    if job['status'] == 'done':
+        resp_dict['images'] = job.get('images', [])
+    response = jsonify(resp_dict)
+    # Prevent caching of status responses
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+
+@app.route('/generation_result/<job_id>')
+def generation_result(job_id):
+    with generation_jobs_lock:
+        job = generation_jobs.get(job_id)
+    if not job:
+        return jsonify({'error': 'Job not found'}), 404
+    if job['status'] != 'done':
+        return jsonify({'error': 'Job not completed', 'status': job['status']}), 400
+    return jsonify({'images': job.get('images', [])}), 200
+
+
+@app.route('/regeneration_result/<job_id>')
+def regeneration_result(job_id):
+    """Get regeneration results and return HTML for frontend"""
+    with generation_jobs_lock:
+        job = generation_jobs.get(job_id)
+    if not job:
+        return jsonify({'error': 'Job not found'}), 404
+    if job['status'] != 'done':
+        return jsonify({'error': 'Job not completed', 'status': job['status']}), 400
+
+    images = job.get('images', [])
+    if not images:
+        return jsonify({'error': 'No images generated'}), 400
+
+    # Return HTML response for frontend, with debug JSON output
+    import json
+    response_html = f"""
+    <div>
+        <h2 data-en='Generated Images ({len(images)})' data-zh='生成的圖片 ({len(images)})'>Generated Images ({len(images)})</h2>
+        <div class='generated-images-gallery'>
+    """
+
+    for image in images:
+        response_html += f"""
+            <div class='generated-image-item'>
+                <img src='{image['url']}' alt='Generated image' class='generated-image-preview' onclick="openImageModal('{image['url']}', '{image['filename']}')">
+                <div class='image-filename'>{image['filename']}</div>
+            </div>
+        """
+
+    response_html += """
+        </div>
+    </div>
+    """
+
+    return response_html
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+@app.route('/uploads/generated/<filename>')
+def generated_file(filename):
+    """Serve generated image files with caching headers for better performance"""
+    response = send_file(os.path.join(GENERATED_FOLDER, filename))
+    # Add cache headers to improve loading speed
+    response.headers['Cache-Control'] = 'public, max-age=3600'  # Cache for 1 hour
+    return response
 
 @app.route('/convert_heic_preview', methods=['POST'])
 def convert_heic_preview():
@@ -896,11 +1375,21 @@ def gemini_2_flash_api(image_path, api_key):
 def test_heic():
     return send_from_directory('.', 'test_heic.html')
 
+# Initialize the ComfyUI model during server startup
+cached_model = None
+
+def initialize_model():
+    global cached_model
+    logger = logging.getLogger(__name__)
+    if cached_model is None:
+        cached_model = ComfyUIClient()  # Replace with actual model loading logic
+        logger.info("ComfyUI model loaded and cached.")
+
 if __name__ == '__main__':
     # Configuration for network access
     host = os.getenv('HOST', '0.0.0.0')  # 0.0.0.0 allows network access
     port = int(os.getenv('PORT', 5001))
-    debug = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
+    debug = False  # Disable debug mode to avoid reloader issues
     
     print(f"🚀 Starting vPrompt server...")
     print(f"📡 Host: {host}")

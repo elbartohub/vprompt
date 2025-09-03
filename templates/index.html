@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-en="vPrompt - Image/Video Prompt Generator" data-zh="vPrompt - 圖片/影片提示詞生成器">vPrompt - Image/Video Prompt Generator</title>
-    <link rel="stylesheet" href="/static/style.css?v=1.3">
+    <link rel="stylesheet" href="/static/style.css?v=1.6">
     <!-- HEIC support library - using multiple CDN sources for reliability -->
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <script>
@@ -36,132 +36,167 @@
         
         <h1 data-en="vPrompt - Prompt Generator" data-zh="vPrompt - 提示詞生成器">vPrompt - Prompt Generator</h1>
         <form method="POST" enctype="multipart/form-data" id="promptForm">
-            <label data-en="Prompt Type:" data-zh="提示詞類型：">Prompt Type:</label>
-            <select name="prompt_type">
-                <option value="image" {% if prompt_type == 'image' %}selected{% endif %} data-en="Image" data-zh="圖片">Image</option>
-                <option value="video" {% if prompt_type == 'video' %}selected{% endif %} data-en="Video" data-zh="影片">Video</option>
-            </select>
-            <br>
-            <label data-en="Language:" data-zh="語言：">Language:</label>
-            <select name="output_lang">
-                <option value="en" {% if output_lang == 'en' %}selected{% endif %} data-en="English" data-zh="英語">English</option>
-                <option value="zh-tw" {% if output_lang == 'zh-tw' or output_lang == 'zh-TW' %}selected{% endif %} data-en="Traditional Chinese" data-zh="繁體中文">Traditional Chinese</option>
-                <option value="zh-cn" {% if output_lang == 'zh-cn' or output_lang == 'zh-CN' %}selected{% endif %} data-en="Simplified Chinese" data-zh="簡體中文">Simplified Chinese</option>
-                <option value="ja" {% if output_lang == 'ja' %}selected{% endif %} data-en="Japanese" data-zh="日語">Japanese</option>
-                <option value="ko" {% if output_lang == 'ko' %}selected{% endif %} data-en="Korean" data-zh="韓語">Korean</option>
-                <option value="fr" {% if output_lang == 'fr' %}selected{% endif %} data-en="French" data-zh="法語">French</option>
-                <option value="de" {% if output_lang == 'de' %}selected{% endif %} data-en="German" data-zh="德語">German</option>
-                <option value="es" {% if output_lang == 'es' %}selected{% endif %} data-en="Spanish" data-zh="西班牙語">Spanish</option>
-            </select>
-            <br>
-            <label data-en="Upload Image:" data-zh="上傳圖片：">Upload Image:</label>
-            <div class="drop-zone" id="dropZone">
-                <div class="drop-zone-content" id="dropZoneContent">
-                    <div class="drop-zone-icon">📁</div>
-                    <div class="drop-zone-text">
-                        <p><strong data-en="Drag and drop image here" data-zh="拖放圖片至此處">Drag and drop image here</strong></p>
-                        <p data-en="or " data-zh="或 ">or <span class="drop-zone-browse" data-en="click to browse" data-zh="點擊瀏覽">click to browse</span></p>
-                        <p class="drop-zone-formats" data-en="Supports PNG, JPG, JPEG, GIF, HEIC" data-zh="支援 PNG、JPG、JPEG、GIF、HEIC">Supports PNG, JPG, JPEG, GIF, HEIC</p>
+            <div class="form-grid">
+                <!-- Row 1 -->
+                <div class="form-card">
+                    <h3 data-en="🎯 Basic Settings" data-zh="🎯 基本設定">🎯 Basic Settings</h3>
+                    <div class="form-group">
+                        <label data-en="Prompt Type:" data-zh="提示詞類型：">Prompt Type:</label>
+                        <select name="prompt_type">
+                            <option value="image" {% if prompt_type == 'image' %}selected{% endif %} data-en="Image" data-zh="圖片">Image</option>
+                            <option value="video" {% if prompt_type == 'video' %}selected{% endif %} data-en="Video" data-zh="影片">Video</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-en="Language:" data-zh="語言：">Language:</label>
+                        <select name="output_lang">
+                            <option value="en" {% if output_lang == 'en' %}selected{% endif %} data-en="English" data-zh="英語">English</option>
+                            <option value="zh-tw" {% if output_lang == 'zh-tw' or output_lang == 'zh-TW' %}selected{% endif %} data-en="Traditional Chinese" data-zh="繁體中文">Traditional Chinese</option>
+                            <option value="zh-cn" {% if output_lang == 'zh-cn' or output_lang == 'zh-CN' %}selected{% endif %} data-en="Simplified Chinese" data-zh="簡體中文">Simplified Chinese</option>
+                            <option value="ja" {% if output_lang == 'ja' %}selected{% endif %} data-en="Japanese" data-zh="日語">Japanese</option>
+                            <option value="ko" {% if output_lang == 'ko' %}selected{% endif %} data-en="Korean" data-zh="韓語">Korean</option>
+                            <option value="fr" {% if output_lang == 'fr' %}selected{% endif %} data-en="French" data-zh="法語">French</option>
+                            <option value="de" {% if output_lang == 'de' %}selected{% endif %} data-en="German" data-zh="德語">German</option>
+                            <option value="es" {% if output_lang == 'es' %}selected{% endif %} data-en="Spanish" data-zh="西班牙語">Spanish</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-en="Time:" data-zh="時間：">Time:</label>
+                        <div class="time-input-container">
+                            <input type="checkbox" id="useTimeCheckbox" checked>
+                            <label for="useTimeCheckbox" style="margin-left:6px;">Use Time</label>
+                            <input type="time" name="time" min="00:00" max="23:59" value="{{ time }}" id="timeInput" style="margin-left:12px;">
+                        </div>
+                        <input type="hidden" name="bypass_time" id="bypassTimeFlag" value="true">
                     </div>
                 </div>
-                <div class="drop-zone-preview" id="dropZonePreview" style="display:none;">
-                    <img id="previewImage" src="" alt="Preview Image">
-                    <div class="preview-overlay">
-                        <div class="preview-info" id="previewInfo"></div>
-                        <button type="button" class="remove-image" id="removeImage">×</button>
+
+                <div class="form-card">
+                    <h3 data-en="📸 Image Upload" data-zh="📸 圖片上傳">📸 Image Upload</h3>
+                    <div class="form-group">
+                        <label data-en="Upload Image:" data-zh="上傳圖片：">Upload Image:</label>
+                        <div class="drop-zone" id="dropZone">
+                            <div class="drop-zone-content" id="dropZoneContent">
+                                <div class="drop-zone-icon">📁</div>
+                                <div class="drop-zone-text">
+                                    <p><strong data-en="Drag and drop image here" data-zh="拖放圖片至此處">Drag and drop image here</strong></p>
+                                    <p data-en="or " data-zh="或 ">or <span class="drop-zone-browse" data-en="click to browse" data-zh="點擊瀏覽">click to browse</span></p>
+                                    <p class="drop-zone-formats" data-en="Supports PNG, JPG, JPEG, GIF, HEIC" data-zh="支援 PNG、JPG、JPEG、GIF、HEIC">Supports PNG, JPG, JPEG, GIF, HEIC</p>
+                                </div>
+                            </div>
+                            <div class="drop-zone-preview" id="dropZonePreview" style="display:none;">
+                                <img id="previewImage" src="" alt="Preview Image">
+                                <div class="preview-overlay">
+                                    <div class="preview-info" id="previewInfo"></div>
+                                    <button type="button" class="remove-image" id="removeImage">×</button>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="file" name="image" id="fileInput" accept="image/*,.heic,.heif" style="display:none;">
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <h3 data-en="🎭 Scene & Character" data-zh="🎭 場景與角色">🎭 Scene & Character</h3>
+                    <div class="form-group">
+                        <label data-en="Scene:" data-zh="場景：">Scene:</label>
+                        <select name="scene" id="sceneSelect">
+                            <option value="戶外" {% if scene == '戶外' %}selected{% endif %} data-en="Outdoor" data-zh="戶外">Outdoor</option>
+                            <option value="室內" {% if scene == '室內' %}selected{% endif %} data-en="Indoor" data-zh="室內">Indoor</option>
+                            <option value="其它" {% if scene == '其它' or not scene %}selected{% endif %} data-en="Other" data-zh="其它">Other</option>
+                        </select>
+                        <input type="text" name="custom_scene" id="customSceneInput" data-en-placeholder="e.g.: Forest, Beach, Cafe, Office..." data-zh-placeholder="例如：森林、海邊、咖啡廳、辦公室..." placeholder="e.g.: Forest, Beach, Cafe, Office..." value="{{ custom_scene }}">
+                    </div>
+                    <div class="form-group">
+                        <label data-en="Character:" data-zh="主角：">Character:</label>
+                        <select name="character" id="characterSelect">
+                            <option value="男" {% if character == '男' %}selected{% endif %} data-en="Man" data-zh="男">Man</option>
+                            <option value="男孩" {% if character == '男孩' %}selected{% endif %} data-en="Boy" data-zh="男孩">Boy</option>
+                            <option value="老人（男）" {% if character == '老人（男）' %}selected{% endif %} data-en="Elderly Man" data-zh="老人（男）">Elderly Man</option>
+                            <option value="女" {% if character == '女' %}selected{% endif %} data-en="Woman" data-zh="女">Woman</option>
+                            <option value="女孩" {% if character == '女孩' %}selected{% endif %} data-en="Girl" data-zh="女孩">Girl</option>
+                            <option value="老人（女）" {% if character == '老人（女）' %}selected{% endif %} data-en="Elderly Woman" data-zh="老人（女）">Elderly Woman</option>
+                            <option value="其它" {% if character == '其它' or not character %}selected{% endif %} data-en="Other" data-zh="其它">Other</option>
+                        </select>
+                        <input type="text" name="custom_character" id="customCharacterInput" data-en-placeholder="e.g.: Couple, Photographer, Student, Businessman, Artist..." data-zh-placeholder="例如：情侶、攝影師、學生、商人、藝術家、..." placeholder="e.g.: Couple, Photographer, Student, Businessman, Artist..." value="{{ custom_character }}">
+                    </div>
+                </div>
+
+                <!-- Row 2 -->
+                <div class="form-card">
+                    <h3 data-en="✍️ Description" data-zh="✍️ 描述內容">✍️ Description</h3>
+                    <div class="form-group">
+                        <label data-en="Share your thoughts:" data-zh="故事描述：">Share your thoughts:</label>
+                        <textarea name="extra_desc" data-en-placeholder="Describe style, mood, action, camera movement, angle, etc... e.g.: Tracking shot, warm sunlight, vintage style, happy expression, low angle shot" data-zh-placeholder="描述風格、情緒、動作、運鏡、角度等... 例如：追蹤鏡頭、溫暖的陽光、復古風格、快樂的表情、低角度拍攝" placeholder="Describe style, mood, action, camera movement, angle, etc... e.g.: Tracking shot, warm sunlight, vintage style, happy expression, low angle shot" rows="8" style="font-family:monospace;font-size:0.75em;">{{ extra_desc }}</textarea>
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <h3 data-en="⚙️ Generation Options" data-zh="⚙️ 生成選項">⚙️ Generation Options</h3>
+                    <div class="option-group">
+                        <label class="option-label">
+                            <input type="checkbox" name="creative_mode" id="creativeMode" value="true" {% if creative_mode %}checked{% endif %}>
+                            <span class="option-text">
+                                <span class="option-title" data-en="🎨 Creative Mode" data-zh="🎨 創意模式">🎨 Creative Mode</span>
+                                <span class="option-desc" data-en="Generate more artistic and imaginative prompts" data-zh="生成更具藝術性和想像力的提示詞">Generate more artistic and imaginative prompts</span>
+                            </span>
+                        </label>
+                        <label class="option-label">
+                            <input type="checkbox" name="include_ending" id="includeEnding" value="true" {% if include_ending %}checked{% endif %}>
+                            <span class="option-text">
+                                <span class="option-title" data-en="🎬 Scene Transition" data-zh="🎬 場景轉場">🎬 Scene Transition</span>
+                                <span class="option-desc" data-en="Add cinematic transitions and endings" data-zh="加入電影轉場和結尾">Add cinematic transitions and endings</span>
+                            </span>
+                        </label>
+                        <label class="option-label">
+                            <input type="checkbox" name="multiple_scenes" id="multipleScenes" value="true" {% if multiple_scenes %}checked{% endif %}>
+                            <span class="option-text">
+                                <span class="option-title" data-en="🎭 Multiple Scenes" data-zh="🎭 多個場景">🎭 Multiple Scenes</span>
+                                <span class="option-desc" data-en="Create a sequence of connected scenes" data-zh="創建多個連續場景序列">Create a sequence of connected scenes</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <h3 data-en="🚀 Generate" data-zh="🚀 生成">🚀 Generate</h3>
+                    <div class="tip">
+                        <strong>💡 <span data-en="Tip:" data-zh="提示：">Tip:</span></strong>
+                        <span data-en="Even without uploading an image, the system will generate rich prompts based on your selected scene, character, time, and additional description!" data-zh="即使沒有上傳圖片，系統也會根據您選擇的場景、主角、時間和額外描述來生成豐富的提示詞！">Even without uploading an image, the system will generate rich prompts based on your selected scene, character, time, and additional description!</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+                        <button type="submit" data-en="Generate Prompt" data-zh="生成提示詞">Generate Prompt</button>
                     </div>
                 </div>
             </div>
-            <input type="file" name="image" id="fileInput" accept="image/*,.heic,.heif" style="display:none;">
-            <br>
-            <label data-en="Time:" data-zh="時間：">Time:</label> <input type="time" name="time" min="00:00" max="23:59" value="{{ time }}">
-            <br>
-            <label data-en="Scene:" data-zh="場景：">Scene:</label>
-            <select name="scene" id="sceneSelect">
-                <option value="戶外" {% if scene == '戶外' %}selected{% endif %} data-en="Outdoor" data-zh="戶外">Outdoor</option>
-                <option value="室內" {% if scene == '室內' %}selected{% endif %} data-en="Indoor" data-zh="室內">Indoor</option>
-                <option value="其它" {% if scene == '其它' or not scene %}selected{% endif %} data-en="Other" data-zh="其它">Other</option>
-            </select>
-            <input type="text" name="custom_scene" id="customSceneInput" data-en-placeholder="e.g.: Forest, Beach, Cafe, Office..." data-zh-placeholder="例如：森林、海邊、咖啡廳、辦公室..." placeholder="e.g.: Forest, Beach, Cafe, Office..." style="display:inline;" value="{{ custom_scene }}">
-            <br>
-            <div class="character-field-inline" style="display: block; margin: 8px 0;">
-                <label data-en="Character:" data-zh="主角：" style="display: inline !important; margin: 0 8px 0 0 !important; font-weight: bold;">Character:</label><select name="character" id="characterSelect" style="display: inline !important; width: auto !important; margin: 0 8px 0 0 !important;"><option value="男" {% if character == '男' %}selected{% endif %} data-en="Man" data-zh="男">Man</option><option value="男孩" {% if character == '男孩' %}selected{% endif %} data-en="Boy" data-zh="男孩">Boy</option><option value="老人（男）" {% if character == '老人（男）' %}selected{% endif %} data-en="Elderly Man" data-zh="老人（男）">Elderly Man</option><option value="女" {% if character == '女' %}selected{% endif %} data-en="Woman" data-zh="女">Woman</option><option value="女孩" {% if character == '女孩' %}selected{% endif %} data-en="Girl" data-zh="女孩">Girl</option><option value="老人（女）" {% if character == '老人（女）' %}selected{% endif %} data-en="Elderly Woman" data-zh="老人（女）">Elderly Woman</option><option value="其它" {% if character == '其它' or not character %}selected{% endif %} data-en="Other" data-zh="其它">Other</option></select><input type="text" name="custom_character" id="customCharacterInput" data-en-placeholder="e.g.: Couple, Photographer, Student, Businessman, Artist..." data-zh-placeholder="例如：情侶、攝影師、學生、商人、藝術家、..." placeholder="e.g.: Couple, Photographer, Student, Businessman, Artist..." style="display: inline !important; width: calc(100% - 200px) !important; margin: 0 !important; min-width: 200px;" value="{{ custom_character }}">
-            </div>
-            <br>
-            <label data-en="Share your thoughts:" data-zh="故事描述：">Share your thoughts:</label>
-            <textarea name="extra_desc" data-en-placeholder="Describe style, mood, action, camera movement, angle, etc... e.g.: Tracking shot, warm sunlight, vintage style, happy expression, low angle shot" data-zh-placeholder="描述風格、情緒、動作、運鏡、角度等... 例如：追蹤鏡頭、溫暖的陽光、復古風格、快樂的表情、低角度拍攝" placeholder="Describe style, mood, action, camera movement, angle, etc... e.g.: Tracking shot, warm sunlight, vintage style, happy expression, low angle shot" rows="3" style="width: 100%; resize: vertical;">{{ extra_desc }}</textarea>
-            <br>
-            <div class="creative-mode-container" style="margin: 15px 0; padding: 12px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #6366f1; margin-left: 0;">
-                <label class="creative-mode-label" style="display: flex; align-items: center; cursor: pointer; font-weight: 500;">
-                    <input type="checkbox" name="creative_mode" id="creativeMode" value="true" {% if creative_mode %}checked{% endif %} style="margin-right: 10px; transform: scale(1.2);">
-                    <span class="creative-mode-text">
-                        <span class="creative-mode-title" data-en="🎨 Creative Mode" data-zh="🎨 創意模式">🎨 Creative Mode</span>
-                        <span class="creative-mode-desc" data-en=" - Generate more artistic, experimental, and imaginative prompts with enhanced visual storytelling" data-zh=" - 生成更具藝術性、實驗性和想像力的提示詞，增強視覺故事敘述"> - Generate more artistic, experimental, and imaginative prompts with enhanced visual storytelling</span>
-                    </span>
-                </label>
-            </div>
-            <div class="transition-mode-container" style="margin: 15px 0; padding: 12px; background-color: #f0f9ff; border-radius: 8px; border-left: 4px solid #0ea5e9; margin-left: 0;">
-                <label class="transition-mode-label" style="display: flex; align-items: center; cursor: pointer; font-weight: 500;">
-                    <input type="checkbox" name="include_ending" id="includeEnding" value="true" {% if include_ending %}checked{% endif %} style="margin-right: 10px; transform: scale(1.2);">
-                    <span class="transition-mode-text">
-                        <span class="transition-mode-title" data-en="🎬 Include Scene Transition/Ending" data-zh="🎬 包含場景轉場/結尾">🎬 Include Scene Transition/Ending</span>
-                        <span class="transition-mode-desc" data-en=" - Add cinematic transitions, fade effects, or scene endings to the prompt" data-zh=" - 在提示詞中加入電影轉場、淡化效果或場景結尾"> - Add cinematic transitions, fade effects, or scene endings to the prompt</span>
-                    </span>
-                </label>
-            </div>
-            <div class="multiple-scenes-container" style="margin: 15px 0; padding: 12px; background-color: #fff5f5; border-radius: 8px; border-left: 4px solid #ef4444; margin-left: 0;">
-                <label class="multiple-scenes-label" style="display: flex; align-items: center; cursor: pointer; font-weight: 500;">
-                    <input type="checkbox" name="multiple_scenes" id="multipleScenes" value="true" {% if multiple_scenes %}checked{% endif %} style="margin-right: 10px; transform: scale(1.2);">
-                    <span class="multiple-scenes-text">
-                        <span class="multiple-scenes-title" data-en="🎭 Generate Multiple Scenes" data-zh="🎭 生成多個場景">🎭 Generate Multiple Scenes</span>
-                        <span class="multiple-scenes-desc" data-en=" - Create a sequence of multiple connected scenes instead of a single scene" data-zh=" - 創建多個連續場景序列，而非單一場景"> - Create a sequence of multiple connected scenes instead of a single scene</span>
-                    </span>
-                </label>
-            </div>
-            <br>
-            <div class="tip" style="background-color: #f0f8ff; padding: 10px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #4CAF50;">
-                <strong>💡 <span data-en="Tip:" data-zh="提示：">Tip:</span></strong><span data-en="Even without uploading an image, the system will generate rich prompts based on your selected scene, character, time, and additional description!" data-zh="即使沒有上傳圖片，系統也會根據您選擇的場景、主角、時間和額外描述來生成豐富的提示詞！">Even without uploading an image, the system will generate rich prompts based on your selected scene, character, time, and additional description!</span>
-            </div>
-            <br>
-            <button type="submit" data-en="Generate Prompt" data-zh="生成提示詞">Generate Prompt</button>
         </form>
         
         <!-- Loading indicator -->
         <div id="loadingIndicator" style="display: none; text-align: center; padding: 20px; margin: 20px 0; background-color: #f8f9fa; border-radius: 8px; border: 2px dashed #6366f1;">
-            <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+            <span class="loading-hourglass" style="font-size: 32px; margin-bottom: 10px; display: inline-block;">⏳</span>
             <div style="font-size: 16px; font-weight: 500; color: #6366f1;" data-en="Generating your prompt..." data-zh="正在生成您的提示詞...">Generating your prompt...</div>
             <div style="font-size: 14px; color: #666; margin-top: 5px;" data-en="Please wait while AI analyzes and creates your content..." data-zh="請稍候，AI 正在分析並創建您的內容...">Please wait while AI analyzes and creates your content...</div>
         </div>
         
         <hr>
-        {% if image_url %}
-        <div>
-            <h3 data-en="Uploaded Image:" data-zh="已上傳圖片：">Uploaded Image:</h3>
-            <img src="{{ image_url }}" alt="Uploaded Image" style="max-width:300px;">
+        <!-- Results container (AJAX will replace this inner HTML) -->
+        <div id="resultsContainer" data-area>
+            {% include '_results.html' %}
         </div>
-        {% endif %}
-        {% if prompt_text %}
-        <div>
-            <h2 data-en="Complete Prompt (Text)" data-zh="完整提示詞（文本）">Complete Prompt (Text)</h2>
-            <textarea id="promptTextArea" readonly style="width:100%;height:220px;">{{ prompt_text }}</textarea>
-                        <div class="button-container">
-                <a href="/download_txt?prompt_text={{ prompt_text|urlencode }}" download data-en="Download TXT" data-zh="下載 TXT">Download TXT</a>
-                <button type="button" id="copyTextBtn" class="icon-btn copy-btn" title="Copy All Text">
+    </div>
+    
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeImageModal()">&times;</span>
+            <div class="modal-toolbar">
+                <button class="modal-download-btn" onclick="downloadModalImage()" title="Download Image">
+                    📥 Download
                 </button>
             </div>
+            <img id="modalImage" src="" alt="Generated image">
+            <div id="modalCaption"></div>
         </div>
-        {% endif %}
-        {% if prompt_json %}
-        <div>
-            <h2 data-en="Veo3 Prompt (JSON)" data-zh="Veo3 提示詞（JSON）">Veo3 Prompt (JSON)</h2>
-            <textarea id="promptJsonArea" readonly style="width:100%;height:180px;">{{ prompt_json_str }}</textarea>
-            <div class="button-container">
-                <a href="/download_json?prompt_json={{ prompt_json_str|urlencode }}" download data-en="Download JSON" data-zh="下載 JSON">Download JSON</a>
-                <button type="button" id="copyJsonBtn" class="icon-btn copy-btn" title="Copy All JSON">
-                </button>
-            </div>
-        </div>
-        {% endif %}
     </div>
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <script src="/static/script.js"></script>
