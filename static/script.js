@@ -294,8 +294,14 @@ document.addEventListener("DOMContentLoaded", function() {
             const submitBtn = form.querySelector("button[type=\"submit\"]");
             const loadingIndicator = document.getElementById("loadingIndicator");
             const resultsContainer = document.getElementById("resultsContainer");
+            const generateVoiceBtn = document.getElementById("generateVoiceBtn");
 
             if (submitBtn) submitBtn.disabled = true;
+            // Disable Generate Voice button during prompt generation
+            if (generateVoiceBtn) {
+                generateVoiceBtn.disabled = true;
+                generateVoiceBtn.style.opacity = "0.6";
+            }
 
             if (loadingIndicator) {
                 loadingIndicator.style.display = "block";
@@ -328,6 +334,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 // Hide loading
                 if (loadingIndicator) loadingIndicator.style.display = "none";
                 if (submitBtn) submitBtn.disabled = false;
+                // Re-enable Generate Voice button after prompt generation
+                if (generateVoiceBtn) {
+                    generateVoiceBtn.disabled = false;
+                    generateVoiceBtn.style.opacity = "1";
+                }
                 
                 // Smooth scroll to Generate Image button after prompt generation
                 setTimeout(function() {
@@ -343,6 +354,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 console.error("Generate prompt failed:", err);
                 if (loadingIndicator) loadingIndicator.style.display = "none";
                 if (submitBtn) submitBtn.disabled = false;
+                // Re-enable Generate Voice button on error
+                if (generateVoiceBtn) {
+                    generateVoiceBtn.disabled = false;
+                    generateVoiceBtn.style.opacity = "1";
+                }
                 showNotification(document.documentElement.getAttribute("data-lang") === "en" ? "Failed to generate prompt" : "生成提示詞失敗", "error");
             });
         });
@@ -368,6 +384,25 @@ document.addEventListener("DOMContentLoaded", function() {
                 const buttonText = isIcon ? "" : (document.documentElement.getAttribute("data-lang") === "en" ? "Copy JSON" : "複製 JSON");
                 copyToClipboard(promptJsonAreaLocal.value, copyJsonBtnLocal, buttonText);
             });
+        }
+        
+        // Bind voice generation button
+        const generateVoiceBtnLocal = document.getElementById("generateVoiceBtn");
+        if (generateVoiceBtnLocal && promptTextAreaLocal) {
+            // Only enable if there's actual prompt text
+            if (promptTextAreaLocal.value.trim()) {
+                generateVoiceBtnLocal.disabled = false;
+                generateVoiceBtnLocal.style.opacity = "1";
+            } else {
+                generateVoiceBtnLocal.disabled = true;
+                generateVoiceBtnLocal.style.opacity = "0.6";
+            }
+            generateVoiceBtnLocal.addEventListener("click", function() {
+                generateVoiceFromText(promptTextAreaLocal.value);
+            });
+            
+            // Load voice samples when button is available
+            loadVoiceSamples();
         }
     }
 
@@ -431,27 +466,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const previewInfo = document.getElementById("previewInfo");
     const removeImageBtn = document.getElementById("removeImage");
 
-    // Debug: 檢查所有元素是否存在
-    console.log("Drop zone elements check:", {
-        dropZone: !!dropZone,
-        fileInput: !!fileInput,
-        dropZoneContent: !!dropZoneContent,
-        dropZonePreview: !!dropZonePreview,
-        previewImage: !!previewImage,
-        previewInfo: !!previewInfo,
-        removeImageBtn: !!removeImageBtn
-    });
-
-    // Debug: Check if heic2any library is loaded
-    console.log("heic2any library check:", {
-        heic2anyAvailable: typeof heic2any !== "undefined",
-        heic2anyFunction: typeof heic2any === "function",
-        heic2anyObject: typeof heic2any
-    });
-
-    // Debug: Test if we can access the uploads
-    console.log("Current page URL:", window.location.href);
-    console.log("Upload test will check for existing HEIC file...");
+    // Debug statements removed
 
     if (dropZone && fileInput && dropZoneContent && dropZonePreview && previewImage && previewInfo) {
         // 點擊觸發文件選擇
@@ -492,24 +507,17 @@ document.addEventListener("DOMContentLoaded", function() {
     
         // 測試函數：檢驗HEIC轉換端點
         window.testHeicConversion = function() {
-            console.log("Testing HEIC conversion endpoint...");
             const testUrl = "/convert_heic/IMG_6019.heic?t=" + Date.now();
-            console.log("Test URL:", testUrl);
         
             const img = new Image();
             img.onload = function() {
-                console.log("✅ HEIC conversion endpoint working!");
-                console.log("Image dimensions:", img.naturalWidth, "x", img.naturalHeight);
-            
                 // 嘗試設置到預覽圖片
                 if (previewImage) {
                     previewImage.src = testUrl;
-                    console.log("Set previewImage.src to:", testUrl);
                 
                     if (dropZoneContent && dropZonePreview) {
                         dropZoneContent.style.display = "none";
                         dropZonePreview.style.display = "flex";
-                        console.log("Updated display styles");
                     }
                 
                     if (previewInfo) {
@@ -518,32 +526,22 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             };
             img.onerror = function(e) {
-                console.log("❌ HEIC conversion endpoint failed:", e);
+                // HEIC conversion failed
             };
             img.src = testUrl;
         };
     
         // 直接顯示圖片測試（不通過Image對象預載）
         window.testDirectDisplay = function() {
-            console.log("Testing direct image display...");
             const testUrl = "/convert_heic/IMG_6019.heic?t=" + Date.now();
         
             if (previewImage && dropZoneContent && dropZonePreview && previewInfo) {
-                console.log("Setting image source directly...");
                 previewImage.src = testUrl;
                 dropZoneContent.style.display = "none";
                 dropZonePreview.style.display = "flex";
                 previewInfo.innerHTML = "IMG_6019.heic (Direct Test)<br><small style=\"color: #28a745; font-weight: bold;\">🖥️ 直接測試</small>";
-                console.log("Direct display test completed");
-            } else {
-                console.log("Missing elements for direct display test");
             }
-        };
-    
-        // 在控制台輸出測試提示
-        console.log("Available test functions:");
-        console.log("- window.testHeicConversion() - Test with image preloading");
-        console.log("- window.testDirectDisplay() - Test direct display");        // 處理文件函數
+        };        // 處理文件函數
         function handleFiles(files) {
             if (files.length > 0) {
                 const file = files[0];
@@ -629,7 +627,6 @@ document.addEventListener("DOMContentLoaded", function() {
         
         // Canvas-based HEIC 預覽函數 - 創建智能預覽圖
         function attemptCanvasHeicPreview(file) {
-            console.log("Creating Canvas-based HEIC preview...");
             
             // 嘗試讀取 HEIC 文件的 EXIF 元數據
             const reader = new FileReader();
@@ -690,12 +687,10 @@ document.addEventListener("DOMContentLoaded", function() {
                     let dimensions = extractHeicDimensions(dataView);
                     if (dimensions) {
                         ctx.fillText(`${dimensions.width} × ${dimensions.height}`, 150, 175);
-                        console.log("HEIC dimensions extracted:", dimensions);
                     } else {
                         ctx.fillText("iPhone 高效率圖像", 150, 175);
                     }
                 } catch (error) {
-                    console.log("Could not extract HEIC dimensions:", error);
                     ctx.fillText("iPhone 高效率圖像", 150, 175);
                 }
                 
@@ -758,22 +753,17 @@ document.addEventListener("DOMContentLoaded", function() {
                 // 如果找不到確切尺寸，返回常見的 iPhone 尺寸
                 return { width: 4032, height: 3024 };
             } catch (error) {
-                console.log("Error extracting HEIC dimensions:", error);
                 return null;
             }
         }
         
         // 服務器端 HEIC 轉換預覽
         function attemptServerSideHeicPreview(file) {
-            console.log("Attempting server-side HEIC conversion...");
-            
             // 首先檢查文件是否已經存在於服務器上
             const testUrl = `/uploads/${encodeURIComponent(file.name)}`;
-            console.log("Testing direct file access:", testUrl);
             
             // 如果文件已存在，直接嘗試轉換
             const convertUrl = `/convert_heic/${encodeURIComponent(file.name)}`;
-            console.log("Testing server conversion:", convertUrl);
             
             // 創建臨時預覽狀態
             showLoadingPreview(file, "檢查服務器端轉換...");
@@ -781,28 +771,20 @@ document.addEventListener("DOMContentLoaded", function() {
             // 直接嘗試服務器端轉換
             const img = new Image();
             img.onload = function() {
-                console.log("Server-side HEIC conversion successful!");
-                console.log("Image loaded successfully, dimensions:", img.naturalWidth, "x", img.naturalHeight);
-                console.log("Setting previewImage.src to:", convertUrl);
                 previewImage.src = convertUrl + "?t=" + Date.now();
                 previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #28a745; font-weight: bold;">🖥️ 服務器端轉換預覽</small><br><small style="color: #666;">圖片已成功轉換並預覽</small>`;
                 dropZoneContent.style.display = "none";
                 dropZonePreview.style.display = "flex";
-                console.log("Preview should now be visible");
             };
             img.onerror = function(e) {
-                console.log("Direct server conversion failed:", e);
-                console.log("Error details:", e.type, e.target.src);
                 // 轉換失敗，需要先上傳文件
                 uploadAndConvertHeic(file);
             };
             img.src = convertUrl + "?t=" + Date.now(); // Add cache buster
-            console.log("Testing image load with URL:", img.src);
         }
         
         // 上傳並轉換 HEIC
         function uploadAndConvertHeic(file) {
-            console.log("Uploading HEIC file for conversion...");
             
             // 創建臨時預覽狀態
             showLoadingPreview(file, "正在上傳 HEIC 圖片...");
@@ -816,35 +798,30 @@ document.addEventListener("DOMContentLoaded", function() {
                 body: formData
             })
                 .then(response => {
-                    console.log("Upload response status:", response.status);
-                    if (response.ok) {
-                    // 文件上傳成功，現在嘗試轉換
-                        showLoadingPreview(file, "正在轉換 HEIC 圖片...");
+                if (response.ok) {
+                // 文件上傳成功，現在嘗試轉換
+                    showLoadingPreview(file, "正在轉換 HEIC 圖片...");
+                
+                    // 等待一下讓服務器處理
+                    setTimeout(() => {
+                        const convertUrl = `/convert_heic/${encodeURIComponent(file.name)}`;
                     
-                        // 等待一下讓服務器處理
-                        setTimeout(() => {
-                            const convertUrl = `/convert_heic/${encodeURIComponent(file.name)}`;
-                            console.log("Trying conversion after upload:", convertUrl);
-                        
-                            const img = new Image();
-                            img.onload = function() {
-                                console.log("Server-side HEIC conversion successful after upload!");
-                                previewImage.src = convertUrl;
-                                previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #28a745; font-weight: bold;">🖥️ 服務器端轉換預覽</small><br><small style="color: #666;">圖片已成功轉換並預覽</small>`;
-                                dropZoneContent.style.display = "none";
-                                dropZonePreview.style.display = "flex";
-                            };
-                            img.onerror = function() {
-                                console.log("Server conversion failed even after upload");
-                                // 最後嘗試獲取文件信息
-                                fetchHeicInfoAndCreatePreview(file);
-                            };
-                            img.src = convertUrl + "?t=" + Date.now();
-                        }, 1000); // Wait 1 second for server processing
-                    } else {
-                        console.log("Upload failed with status:", response.status);
-                        fetchHeicInfoAndCreatePreview(file);
-                    }
+                        const img = new Image();
+                        img.onload = function() {
+                            previewImage.src = convertUrl;
+                            previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #28a745; font-weight: bold;">🖥️ 服務器端轉換預覽</small><br><small style="color: #666;">圖片已成功轉換並預覽</small>`;
+                            dropZoneContent.style.display = "none";
+                            dropZonePreview.style.display = "flex";
+                        };
+                        img.onerror = function() {
+                            // 最後嘗試獲取文件信息
+                            fetchHeicInfoAndCreatePreview(file);
+                        };
+                        img.src = convertUrl + "?t=" + Date.now();
+                    }, 1000); // Wait 1 second for server processing
+                } else {
+                    fetchHeicInfoAndCreatePreview(file);
+                }
                 })
                 .catch(error => {
                     console.error("Upload error:", error);
@@ -854,17 +831,13 @@ document.addEventListener("DOMContentLoaded", function() {
         
         // 獲取 HEIC 文件信息並創建智能預覽
         function fetchHeicInfoAndCreatePreview(file) {
-            console.log("Fetching HEIC file info from server...");
-            
             const infoUrl = `/heic_info/${encodeURIComponent(file.name)}`;
             fetch(infoUrl)
                 .then(response => response.json())
                 .then(info => {
-                    console.log("HEIC file info received:", info);
                     createEnhancedHeicPreview(file, info);
                 })
                 .catch(error => {
-                    console.log("Failed to get HEIC info:", error);
                     // 最終降級到簡單佔位符
                     showHeicPlaceholder(file);
                 });
@@ -872,7 +845,6 @@ document.addEventListener("DOMContentLoaded", function() {
         
         // 創建增強的 HEIC 預覽（基於服務器信息）
         function createEnhancedHeicPreview(file, info) {
-            console.log("Creating enhanced HEIC preview with server info...");
             
             const canvas = document.createElement("canvas");
             canvas.width = 320;
@@ -999,7 +971,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 const testImg = new Image();
                 testImg.onload = function() {
                     // 瀏覽器能夠載入 HEIC！
-                    console.log("Browser supports HEIC preview!");
                     previewImage.src = e.target.result;
                     previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #28a745; font-weight: bold;">✓ HEIC 原生預覽</small>`;
                     dropZoneContent.style.display = "none";
@@ -1007,13 +978,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
                 testImg.onerror = function() {
                     // 瀏覽器不支援 HEIC 預覽，使用 Canvas 預覽
-                    console.log("Browser does not support HEIC preview, using Canvas preview");
                     attemptCanvasHeicPreview(file);
                 };
                 testImg.src = e.target.result;
             };
             reader.onerror = function() {
-                console.log("FileReader error for HEIC, using Canvas preview");
                 attemptCanvasHeicPreview(file);
             };
             reader.readAsDataURL(file);
@@ -1104,14 +1073,12 @@ document.addEventListener("DOMContentLoaded", function() {
         
         // 客戶端 HEIC 轉換（作為備用）
         function attemptClientSideHeicConversion(file) {
-            console.log("Attempting client-side HEIC conversion...");
             
             // 設置載入狀態
             previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #2196f3;">🔄 嘗試 HEIC 預覽...</small>`;
             
             // 方法1: 嘗試客戶端轉換
             if (typeof heic2any !== "undefined") {
-                console.log("heic2any library found, starting conversion...");
                 
                 previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #2196f3;">🔄 正在轉換 HEIC 圖片...</small>`;
                 
@@ -1121,18 +1088,15 @@ document.addEventListener("DOMContentLoaded", function() {
                     quality: 0.8
                 })
                     .then(function(conversionResult) {
-                        console.log("✅ Client-side HEIC conversion successful!");
                         const convertedBlob = Array.isArray(conversionResult) ? conversionResult[0] : conversionResult;
                         const imageUrl = URL.createObjectURL(convertedBlob);
                     
                         previewImage.onload = function() {
-                            console.log("✅ Converted HEIC image displayed successfully");
                             previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #28a745; font-weight: bold;">✓ HEIC 圖片預覽</small>`;
                             setTimeout(() => URL.revokeObjectURL(imageUrl), 2000);
                         };
                     
                         previewImage.onerror = function() {
-                            console.error("❌ Error displaying converted HEIC image");
                             URL.revokeObjectURL(imageUrl);
                             tryServerSideHeicPreview(file);
                         };
@@ -1142,11 +1106,9 @@ document.addEventListener("DOMContentLoaded", function() {
                         dropZonePreview.style.display = "flex";
                     })
                     .catch(function(error) {
-                        console.error("❌ Client-side HEIC conversion failed:", error);
                         tryServerSideHeicPreview(file);
                     });
             } else {
-                console.warn("⚠️ heic2any library not available");
                 tryServerSideHeicPreview(file);
             }
         }
@@ -1173,17 +1135,14 @@ document.addEventListener("DOMContentLoaded", function() {
                     }
                 })
                 .then(blob => {
-                    console.log("✅ Server-side HEIC conversion successful!");
                     const imageUrl = URL.createObjectURL(blob);
                 
                     previewImage.onload = function() {
-                        console.log("✅ Server-converted HEIC image displayed");
                         previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #28a745; font-weight: bold;">✓ 伺服器 HEIC 預覽</small>`;
                         setTimeout(() => URL.revokeObjectURL(imageUrl), 2000);
                     };
                 
                     previewImage.onerror = function() {
-                        console.error("❌ Error displaying server-converted image");
                         URL.revokeObjectURL(imageUrl);
                         tryNativeHeicPreview(file);
                     };
@@ -1193,14 +1152,12 @@ document.addEventListener("DOMContentLoaded", function() {
                     dropZonePreview.style.display = "flex";
                 })
                 .catch(error => {
-                    console.error("❌ Server-side HEIC conversion failed:", error);
                     tryNativeHeicPreview(file);
                 });
         }
         
         // 嘗試原生瀏覽器 HEIC 預覽
         function tryNativeHeicPreview(file) {
-            console.log("Attempting native HEIC preview...");
             
             previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #6366f1;">🔄 原生預覽中...</small>`;
             
@@ -1208,20 +1165,17 @@ document.addEventListener("DOMContentLoaded", function() {
             reader.onload = function(e) {
                 const testImg = new Image();
                 testImg.onload = function() {
-                    console.log("✅ Browser supports native HEIC preview!");
                     previewImage.src = e.target.result;
                     previewInfo.innerHTML = `${file.name} (${formatFileSize(file.size)})<br><small style="color: #28a745; font-weight: bold;">✓ 原生 HEIC 預覽</small>`;
                     dropZoneContent.style.display = "none";
                     dropZonePreview.style.display = "flex";
                 };
                 testImg.onerror = function() {
-                    console.warn("❌ Native HEIC preview not supported");
                     showEnhancedHeicPlaceholder(file);
                 };
                 testImg.src = e.target.result;
             };
             reader.onerror = function() {
-                console.error("❌ FileReader failed for HEIC file");
                 showEnhancedHeicPlaceholder(file);
             };
             reader.readAsDataURL(file);
@@ -1229,7 +1183,6 @@ document.addEventListener("DOMContentLoaded", function() {
         
         // 增強的 HEIC 佔位符（作為最終後備方案）
         function showEnhancedHeicPlaceholder(file) {
-            console.log("Showing enhanced HEIC placeholder...");
             
             const canvas = document.createElement("canvas");
             canvas.width = 400;
@@ -1303,6 +1256,12 @@ document.addEventListener("DOMContentLoaded", function() {
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
         }
+    }
+    
+    // Add event listener for emotion description to save settings
+    const emotionDescription = document.getElementById('emotionDescription');
+    if (emotionDescription) {
+        emotionDescription.addEventListener('input', saveVoiceSettings);
     }
 });
 
@@ -1458,6 +1417,22 @@ function regenerateFromJson() {
     const originalText = regenerateBtn.textContent;
     regenerateBtn.disabled = true;
     regenerateBtn.textContent = document.documentElement.getAttribute("data-lang") === "en" ? "🎨 Generating..." : "🎨 生成中...";
+    
+    // Add timer tracking like voice generation
+    const startTime = Date.now();
+    
+    // Create or show progress indicator
+    let imageProgress = document.getElementById("imageProgress");
+    if (!imageProgress) {
+        imageProgress = document.createElement("div");
+        imageProgress.id = "imageProgress";
+        imageProgress.style.cssText = "margin-top: 12px; padding: 8px; background: #f0f8ff; border: 1px solid #ddd; border-radius: 4px; display: none;";
+        regenerateBtn.parentNode.insertBefore(imageProgress, regenerateBtn.nextSibling);
+    }
+    imageProgress.style.display = "block";
+    imageProgress.innerHTML = document.documentElement.getAttribute("data-lang") === "en" 
+        ? "<div class='progress-text'>🎨 Starting image generation...</div>" 
+        : "<div class='progress-text'>🎨 開始圖片生成...</div>";
 
     // Validate JSON
     let jsonData;
@@ -1474,10 +1449,23 @@ function regenerateFromJson() {
 
     // mark in-progress so rapid second clicks don't start another job
     window._vprompt_generation_in_progress = true;
+    
+    // Disable voice generation button during image generation
+    const generateVoiceBtn = document.getElementById("generateVoiceBtn");
+    if (generateVoiceBtn) {
+        generateVoiceBtn.disabled = true;
+        generateVoiceBtn.style.opacity = "0.5";
+    }
 
     // Create form data for starting background job
     const formData = new FormData();
     formData.append("json_data", JSON.stringify(jsonData));
+    
+    // Add the modified text from the editable textarea
+    const promptTextArea = document.getElementById("promptTextArea");
+    if (promptTextArea && promptTextArea.value.trim() !== "") {
+        formData.append("modified_text", promptTextArea.value.trim());
+    }
     
     // Add seed parameter if provided
     const seedInput = document.getElementById("regenerateSeed");
@@ -1511,7 +1499,7 @@ function regenerateFromJson() {
 
             // Debug block: show jobId and echoed JSON in UI
             let debugBlock = document.getElementById("vprompt-jobid-debug");
-            let debugEchoBlock = document.getElementById("vprompt-json-echo-debug");
+
             if (!debugBlock) {
                 debugBlock = document.createElement("div");
                 debugBlock.id = "vprompt-jobid-debug";
@@ -1527,79 +1515,19 @@ function regenerateFromJson() {
             } else {
                 debugBlock.innerHTML = `<b>Job ID:</b> <code>${jobId}</code>`;
             }
-            // Show echoed JSON
-            if (!debugEchoBlock) {
-                debugEchoBlock = document.createElement("div");
-                debugEchoBlock.id = "vprompt-json-echo-debug";
-                debugEchoBlock.style = "background:#f8f8f8;border:1px solid #ccc;padding:8px;font-size:13px;margin:12px 0;max-width:600px;word-break:break-all;";
-                debugEchoBlock.innerHTML = `<pre style='white-space:pre-wrap;'>${data.debug_echo || ''}</pre>`;
-                debugBlock.parentNode.insertBefore(debugEchoBlock, debugBlock.nextSibling);
-            } else {
-                debugEchoBlock.innerHTML = `<pre style='white-space:pre-wrap;'>${data.debug_echo || ''}</pre>`;
-            }
+            // Debug echo functionality removed
 
-            // Responsive progress bar and percentage indicator
-            const startTime = Date.now();
-            const minDisplayTime = 2000; // Show progress for at least 2 seconds
             let resultsFetched = false; // Flag to prevent duplicate result fetching
-
-            // Create or get progress bar container
-            let progressContainer = document.getElementById("vprompt-progress-container");
-            if (!progressContainer) {
-                progressContainer = document.createElement("div");
-                progressContainer.id = "vprompt-progress-container";
-                progressContainer.style = "width:100%;max-width:400px;margin:16px auto 8px auto;padding:0 8px;display:flex;flex-direction:column;align-items:center;gap:8px;";
-                // Insert below the Generate Image button
-                const regenerateBtn = document.getElementById("regenerateBtn");
-                if (regenerateBtn && regenerateBtn.parentNode) {
-                    regenerateBtn.parentNode.insertBefore(progressContainer, regenerateBtn.nextSibling);
-                } else {
-                    // Fallback: insert above the JSON area or at top of body
-                    const jsonArea = document.getElementById("promptJsonArea");
-                    if (jsonArea && jsonArea.parentNode) {
-                        jsonArea.parentNode.insertBefore(progressContainer, jsonArea);
-                    } else {
-                        document.body.insertBefore(progressContainer, document.body.firstChild);
-                    }
-                }
-            }
-            // Create or get progress bar
-            let progressBar = document.getElementById("vprompt-progress-bar");
-            if (!progressBar) {
-                progressBar = document.createElement("div");
-                progressBar.id = "vprompt-progress-bar";
-                progressBar.style = "width:100%;height:18px;background:#eee;border-radius:9px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);position:relative;";
-                // Inner bar
-                const innerBar = document.createElement("div");
-                innerBar.id = "vprompt-progress-inner";
-                innerBar.style = "height:100%;width:0%;background:linear-gradient(90deg,#4f8cff,#6ed6ff);transition:width 0.3s;";
-                progressBar.appendChild(innerBar);
-                progressContainer.appendChild(progressBar);
-            }
-            // Create or get percentage text
-            let progressText = document.getElementById("vprompt-progress-text");
-            if (!progressText) {
-                progressText = document.createElement("div");
-                progressText.id = "vprompt-progress-text";
-                progressText.style = "width:100%;text-align:center;font-size:0.9em;font-weight:500;color:#333;letter-spacing:0.5px;";
-                progressContainer.appendChild(progressText);
-            }
-
-            // Responsive adjustments
-            progressContainer.style.maxWidth = window.innerWidth < 500 ? "98vw" : "400px";
-            window.addEventListener("resize", () => {
-                progressContainer.style.maxWidth = window.innerWidth < 500 ? "98vw" : "400px";
-            });
             
-            // Smooth scroll to progress bar when generation starts
-            setTimeout(function() {
-                progressContainer.scrollIntoView({
-                    behavior: "smooth",
-                    block: "center"
-                });
-            }, 100);
-
             const poll = setInterval(() => {
+                // Update elapsed time in progress indicator
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                if (imageProgress) {
+                    imageProgress.innerHTML = document.documentElement.getAttribute("data-lang") === "en" 
+                        ? `<div class='progress-text'>🎨 Generating image... ${elapsed}s</div>` 
+                        : `<div class='progress-text'>🎨 生成圖片中... ${elapsed}s</div>`;
+                }
+                
                 fetch(`/generation_status/${jobId}`)
                     .then(async r => {
                         if (!r.ok) {
@@ -1611,17 +1539,7 @@ function regenerateFromJson() {
                             throw new Error(`Invalid JSON response: ${txt}`);
                         });
                         if (s.error) throw new Error(s.error);
-                        const p = s.progress || 0;
-                        // Update progress bar and text
-                        const innerBar = document.getElementById("vprompt-progress-inner");
-                        if (innerBar) innerBar.style.width = `${p}%`;
-                        if (progressText) progressText.textContent = `Generating... ${p}%`;
-                        progressContainer.style.display = "flex";
-                        // Hide bar if done or error
                         if (s.status === "done" && !resultsFetched) {
-                            progressContainer.style.display = "none";
-                            // Check if minimum display time has passed
-                            const elapsedTime = Date.now() - startTime;
                             const startGalleryFetch = () => {
                                 clearInterval(poll);
                                 // Add retry logic for fetching results
@@ -1672,12 +1590,23 @@ function regenerateFromJson() {
                                             window._vprompt_generation_in_progress = false;
                                             isRetrying = false;
                                             resultsFetched = true;
+                                            // Hide progress indicator
+                                            if (imageProgress) {
+                                                imageProgress.style.display = "none";
+                                            }
                                             showNotification(
                                                 document.documentElement.getAttribute("data-lang") === "en" 
                                                     ? "✅ Image regeneration completed successfully!" 
                                                     : "✅ 圖片重新生成完成！", 
                                                 "success"
                                             );
+                                            
+                                            // Enable voice generation button after image is displayed
+                                            const generateVoiceBtn = document.getElementById("generateVoiceBtn");
+                                            if (generateVoiceBtn) {
+                                                generateVoiceBtn.disabled = false;
+                                                generateVoiceBtn.style.opacity = "1";
+                                            }
                                             
                                             // Smooth scroll to generated images
                                             setTimeout(function() {
@@ -1687,48 +1616,6 @@ function regenerateFromJson() {
                                                         behavior: "smooth",
                                                         block: "start"
                                                     });
-                                                }
-                                                
-                                                // Add scroll again when images are loaded
-                                                const images = document.querySelectorAll('.generated-image-preview');
-                                                if (images.length > 0) {
-                                                    let loadedCount = 0;
-                                                    const totalImages = images.length;
-                                                    
-                                                    images.forEach(img => {
-                                                        if (img.complete) {
-                                                            loadedCount++;
-                                                        } else {
-                                                            img.addEventListener('load', function() {
-                                                                loadedCount++;
-                                                                if (loadedCount === totalImages) {
-                                                                    // All images loaded, scroll again
-                                                                    setTimeout(function() {
-                                                                        const heading = document.querySelector("h2[data-en*='Generated Images'], h2[data-zh*='生成的圖片']");
-                                                                        if (heading) {
-                                                                            heading.scrollIntoView({
-                                                                                behavior: "smooth",
-                                                                                block: "start"
-                                                                            });
-                                                                        }
-                                                                    }, 100);
-                                                                }
-                                                            });
-                                                        }
-                                                    });
-                                                    
-                                                    // If all images are already loaded, scroll immediately
-                                                    if (loadedCount === totalImages) {
-                                                        setTimeout(function() {
-                                                            const heading = document.querySelector("h2[data-en*='Generated Images'], h2[data-zh*='生成的圖片']");
-                                                            if (heading) {
-                                                                heading.scrollIntoView({
-                                                                    behavior: "smooth",
-                                                                    block: "start"
-                                                                });
-                                                            }
-                                                        }, 500);
-                                                    }
                                                 }
                                             }, 300);
                                             
@@ -1750,6 +1637,16 @@ function regenerateFromJson() {
                                                 }
                                                 window._vprompt_generation_in_progress = false;
                                                 isRetrying = false;
+                                                // Hide progress indicator
+                                                if (imageProgress) {
+                                                    imageProgress.style.display = "none";
+                                                }
+                                                // Re-enable voice generation button on error
+                                                const generateVoiceBtn = document.getElementById("generateVoiceBtn");
+                                                if (generateVoiceBtn) {
+                                                    generateVoiceBtn.disabled = false;
+                                                    generateVoiceBtn.style.opacity = "1";
+                                                }
                                                 showNotification(
                                                     document.documentElement.getAttribute("data-lang") === "en" 
                                                         ? "❌ Failed to load regenerated images after multiple attempts" 
@@ -1761,17 +1658,23 @@ function regenerateFromJson() {
                                 };
                                 fetchResultsWithRetry();
                             };
-                            if (elapsedTime < minDisplayTime) {
-                                setTimeout(startGalleryFetch, minDisplayTime - elapsedTime);
-                            } else {
-                                startGalleryFetch();
-                            }
+                            startGalleryFetch();
                         } else if (s.status === "error") {
                             clearInterval(poll);
+                            // Re-enable voice generation button on error
+                            const generateVoiceBtn = document.getElementById("generateVoiceBtn");
+                            if (generateVoiceBtn) {
+                                generateVoiceBtn.disabled = false;
+                                generateVoiceBtn.style.opacity = "1";
+                            }
                             showNotification("Generation failed", "error");
                             regenerateBtn.disabled = false;
                             regenerateBtn.textContent = originalText;
                             window._vprompt_generation_in_progress = false;
+                            // Hide progress indicator
+                            if (imageProgress) {
+                                imageProgress.style.display = "none";
+                            }
                         }
                     }).catch(err => {
                         clearInterval(poll);
@@ -1780,18 +1683,701 @@ function regenerateFromJson() {
                             ? `Generation polling failed: ${err.message}`
                             : `生成輪詢失敗: ${err.message}`;
                         showNotification(msg, "error");
+                        // Re-enable voice generation button on polling error
+                        const generateVoiceBtn = document.getElementById("generateVoiceBtn");
+                        if (generateVoiceBtn) {
+                            generateVoiceBtn.disabled = false;
+                            generateVoiceBtn.style.opacity = "1";
+                        }
                         if (regenerateBtn) regenerateBtn.disabled = false;
                         if (regenerateBtn) regenerateBtn.textContent = originalText;
                         window._vprompt_generation_in_progress = false;
+                        // Hide progress indicator
+                        if (imageProgress) {
+                            imageProgress.style.display = "none";
+                        }
                     });
-            }, 2000);  // Poll every 2 seconds
+            }, 200);  // Poll every 200ms for more responsive progress updates
         })
         .catch(err => {
             console.error("Start job error:", err);
+            // Re-enable voice generation button on start job error
+            const generateVoiceBtn = document.getElementById("generateVoiceBtn");
+            if (generateVoiceBtn) {
+                generateVoiceBtn.disabled = false;
+                generateVoiceBtn.style.opacity = "1";
+            }
             regenerateBtn.disabled = false;
             regenerateBtn.textContent = originalText;
             window._vprompt_generation_in_progress = false;
+            // Hide progress indicator
+            if (imageProgress) {
+                imageProgress.style.display = "none";
+            }
+            showNotification(document.documentElement.getAttribute("data-lang") === "en" ? `Failed to start generation: ${err.message}` : `啟動生成失敗：${err.message}`, "error");
         });
+}
+
+// Notification function
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 6px;
+        color: white;
+        font-weight: 500;
+        z-index: 10000;
+        max-width: 400px;
+        word-wrap: break-word;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transition: all 0.3s ease;
+    `;
+    
+    // Set background color based on type
+    switch(type) {
+        case 'success':
+            notification.style.backgroundColor = '#10b981';
+            break;
+        case 'error':
+            notification.style.backgroundColor = '#ef4444';
+            break;
+        case 'warning':
+            notification.style.backgroundColor = '#f59e0b';
+            break;
+        default:
+            notification.style.backgroundColor = '#3b82f6';
+    }
+    
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }
+    }, 5000);
+}
+
+
+
+// Voice generation function with improved polling and timeout handling
+function generateVoiceFromText(text) {
+    if (!text || text.trim() === '') {
+        showNotification(
+            document.documentElement.getAttribute("data-lang") === "en" 
+                ? "No text to generate voice from" 
+                : "沒有文本可生成語音", 
+            "warning"
+        );
+        return;
+    }
+    
+    const generateVoiceBtn = document.getElementById("generateVoiceBtn");
+    const voiceProgress = document.getElementById("voiceProgress");
+    
+    if (!generateVoiceBtn) return;
+    
+    // Prevent multiple simultaneous voice generations
+    if (window._vprompt_voice_generation_in_progress) {
+        showNotification(
+            document.documentElement.getAttribute("data-lang") === "en" 
+                ? "Voice generation already in progress" 
+                : "語音生成進行中", 
+            "warning"
+        );
+        return;
+    }
+    
+    window._vprompt_voice_generation_in_progress = true;
+    
+    // Update button state
+    const originalText = generateVoiceBtn.textContent;
+    generateVoiceBtn.disabled = true;
+    generateVoiceBtn.textContent = document.documentElement.getAttribute("data-lang") === "en" 
+        ? "🎵 Generating..." 
+        : "🎵 生成中...";
+    
+    // Show progress indicator with enhanced feedback
+    if (voiceProgress) {
+        voiceProgress.style.display = "block";
+        voiceProgress.innerHTML = document.documentElement.getAttribute("data-lang") === "en" 
+            ? "<div class='progress-text'>🎵 Starting voice generation...</div>" 
+            : "<div class='progress-text'>🎵 開始語音生成...</div>";
+    }
+    
+    const startTime = Date.now();
+    let pollAttempts = 0;
+    const maxPollAttempts = 180; // 6 minutes max (180 * 2 seconds)
+    let pollInterval = null;
+    
+    // Function to reset voice generation state
+    function resetVoiceGenerationState() {
+        window._vprompt_voice_generation_in_progress = false;
+        generateVoiceBtn.disabled = false;
+        generateVoiceBtn.textContent = originalText;
+        
+        if (voiceProgress) {
+            voiceProgress.style.display = "none";
+        }
+        
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
+    }
+    
+    // Function to display audio files
+    function displayAudioFiles(audioFiles, promptText) {
+        if (audioFiles && audioFiles.length > 0) {
+            // Debug logging for voice speaker file names
+            console.log('🎵 Voice generation completed! Generated audio files:');
+            audioFiles.forEach((audio, index) => {
+                console.log(`  [${index + 1}] Speaker file: ${audio.filename}`);
+                console.log(`      URL: ${audio.url}`);
+            });
+            
+            // Show the audio player container
+            const audioPlayerContainer = document.getElementById('audioPlayerContainer');
+            const generatedAudio = document.getElementById('generatedAudio');
+            const audioSource = document.getElementById('audioSource');
+            const voicePromptTextContainer = document.getElementById('voicePromptTextContainer');
+            const voicePromptText = document.getElementById('voicePromptText');
+            
+            // Debug logging
+            console.log('🔍 Debug - Elements found:');
+            console.log('  audioPlayerContainer:', !!audioPlayerContainer);
+            console.log('  generatedAudio:', !!generatedAudio);
+            console.log('  audioSource:', !!audioSource);
+            console.log('  voicePromptTextContainer:', !!voicePromptTextContainer);
+            console.log('  voicePromptText:', !!voicePromptText);
+            console.log('  promptText:', !!promptText);
+            
+            if (audioPlayerContainer && generatedAudio && audioSource) {
+                // Set the audio source to the first generated audio file
+                const audioFile = audioFiles[0];
+                audioSource.src = audioFile.url;
+                
+                // Set the correct MIME type based on file extension
+                const extension = audioFile.filename.toLowerCase().split('.').pop();
+                const mimeTypes = {
+                    'wav': 'audio/wav',
+                    'mp3': 'audio/mpeg',
+                    'flac': 'audio/flac',
+                    'ogg': 'audio/ogg',
+                    'm4a': 'audio/mp4',
+                    'aac': 'audio/aac'
+                };
+                audioSource.type = mimeTypes[extension] || 'audio/wav';
+                
+                console.log('🎵 Audio file details:', {
+                    filename: audioFile.filename,
+                    url: audioFile.url,
+                    extension: extension,
+                    mimeType: audioSource.type
+                });
+                
+                generatedAudio.load();
+                
+                // Show the audio player container
+                audioPlayerContainer.style.display = 'block';
+                console.log('🎵 Audio player container shown');
+                
+                // Try recreating the audio element completely with mobile optimizations
+                const newAudio = document.createElement('audio');
+                newAudio.id = 'generatedAudio';
+                newAudio.controls = true;
+                newAudio.style.width = '100%';
+                newAudio.style.display = 'block';
+                newAudio.preload = 'metadata'; // Better for mobile performance
+                newAudio.playsInline = true; // Prevents fullscreen on iOS
+                
+                const newSource = document.createElement('source');
+                newSource.id = 'audioSource';
+                newSource.src = audioFile.url;
+                newSource.type = mimeTypes[extension] || 'audio/wav';
+                
+                newAudio.appendChild(newSource);
+                
+                // Add mobile-specific error handling
+                newAudio.addEventListener('error', function(e) {
+                    console.error('🎵 Audio playback error on mobile:', e);
+                    showNotification(
+                        document.documentElement.getAttribute("data-lang") === "en" 
+                            ? "Audio playback failed. Try downloading the file instead." 
+                            : "音頻播放失敗。請嘗試下載文件。", 
+                        "warning"
+                    );
+                });
+                
+                // Add mobile-specific load handling
+                newAudio.addEventListener('canplay', function() {
+                    console.log('🎵 Audio ready to play on mobile');
+                });
+                
+                // Replace the existing audio element
+                const audioContainer = generatedAudio.parentNode;
+                audioContainer.replaceChild(newAudio, generatedAudio);
+                
+                console.log('🎵 Audio element recreated with controls:', {
+                    hasControls: newAudio.hasAttribute('controls'),
+                    controlsValue: newAudio.controls,
+                    src: newSource.src,
+                    type: newSource.type
+                });
+                
+                // Update references
+                const updatedAudio = document.getElementById('generatedAudio');
+                const updatedSource = document.getElementById('audioSource');
+                
+                // Log computed styles for the new audio element
+                const computedStyle = window.getComputedStyle(updatedAudio);
+                console.log('🔍 Audio element computed styles:', {
+                    display: computedStyle.display,
+                    visibility: computedStyle.visibility,
+                    width: computedStyle.width,
+                    height: computedStyle.height,
+                    opacity: computedStyle.opacity
+                });
+                
+                // Additional debugging for the recreated audio element
+                setTimeout(() => {
+                    console.log('🔍 Audio element state:', {
+                        canPlay: updatedAudio.canPlayType(updatedSource.type),
+                        readyState: updatedAudio.readyState,
+                        error: updatedAudio.error,
+                        src: updatedAudio.src,
+                        hasControls: updatedAudio.hasAttribute('controls'),
+                        controlsValue: updatedAudio.controls,
+                        outerHTML: updatedAudio.outerHTML.substring(0, 200)
+                    });
+                    
+                    // Check if audio element is in DOM
+                    const audioInDOM = document.contains(updatedAudio);
+                    console.log('🔍 Audio element in DOM:', audioInDOM);
+                    
+                    // Get bounding box
+                    const rect = updatedAudio.getBoundingClientRect();
+                    console.log('🔍 Audio element bounding box:', {
+                        width: rect.width,
+                        height: rect.height,
+                        top: rect.top,
+                        left: rect.left,
+                        visible: rect.width > 0 && rect.height > 0
+                    });
+                    
+                    // Force load the audio
+                    updatedAudio.load();
+                    console.log('🎵 Audio load() called on recreated element');
+                }, 100);
+                
+                // Show the prompt text if available
+                if (voicePromptTextContainer && voicePromptText && promptText) {
+                    voicePromptText.textContent = promptText;
+                    voicePromptTextContainer.style.display = 'block';
+                    console.log('📝 Prompt text container shown');
+                    
+
+                } else {
+                    console.log('❌ Prompt text not shown - missing elements or text');
+                }
+                
+                // Setup download button
+                const downloadAudioBtn = document.getElementById('downloadAudioBtn');
+                if (downloadAudioBtn) {
+                    downloadAudioBtn.onclick = function() {
+                        const link = document.createElement('a');
+                        link.href = audioFiles[0].url;
+                        link.download = audioFiles[0].filename || 'generated_voice.wav';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    };
+                }
+            }
+        }
+    }
+    
+    // Job-based polling function for voice generation status
+    function startVoiceJobPolling(jobId) {
+        if (voiceProgress) {
+            voiceProgress.innerHTML = document.documentElement.getAttribute("data-lang") === "en" 
+                ? "<div class='progress-text'>🔄 Starting voice generation...</div>" 
+                : "<div class='progress-text'>🔄 開始語音生成...</div>";
+        }
+        
+        pollInterval = setInterval(() => {
+            pollAttempts++;
+            
+            // Check job status using the generation_status endpoint
+            fetch(`/generation_status/${jobId}`, {
+                method: 'GET'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const elapsed = Math.round((Date.now() - startTime) / 1000);
+                
+                if (data.status === 'done') {
+                    // Voice generation completed successfully
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                    
+                    showNotification(
+                        document.documentElement.getAttribute("data-lang") === "en" 
+                            ? `✅ Voice generation completed in ${elapsed}s!` 
+                            : `✅ 語音生成完成！耗時 ${elapsed} 秒`, 
+                        "success"
+                    );
+                    
+                    // Display audio files if available
+                    if (data.audio_files && data.audio_files.length > 0) {
+                        console.log('🎵 Voice generation completed! Generated audio files:');
+                        data.audio_files.forEach((audio, index) => {
+                            console.log(`  [${index + 1}] Speaker file: ${audio.filename}`);
+                            console.log(`      URL: ${audio.url}`);
+                        });
+                        displayAudioFiles(data.audio_files, text);
+                    }
+                    
+                    resetVoiceGenerationState();
+                } else if (data.status === 'error') {
+                    // Voice generation failed
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                    
+                    showNotification(
+                        document.documentElement.getAttribute("data-lang") === "en" 
+                            ? `❌ Voice generation failed: ${data.error || 'Unknown error'}` 
+                            : `❌ 語音生成失敗: ${data.error || '未知錯誤'}`, 
+                        "error"
+                    );
+                    
+                    resetVoiceGenerationState();
+                } else {
+                    // Still in progress - update progress indicator
+                    const progressPercent = data.progress || 0;
+                    if (voiceProgress) {
+                        voiceProgress.innerHTML = document.documentElement.getAttribute("data-lang") === "en" 
+                            ? `<div class='progress-text'>🎵 Voice generation in progress... ${progressPercent}% (${elapsed}s)</div>` 
+                            : `<div class='progress-text'>🎵 語音生成進行中... ${progressPercent}% (${elapsed}秒)</div>`;
+                    }
+                }
+            })
+            .catch(pollError => {
+                console.warn('Voice job polling error:', pollError);
+            });
+            
+            // Timeout after max attempts
+            if (pollAttempts >= maxPollAttempts) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+                showNotification(
+                    document.documentElement.getAttribute("data-lang") === "en" 
+                        ? "⏰ Voice generation timeout - please check manually" 
+                        : "⏰ 語音生成超時 - 請手動檢查", 
+                    "warning"
+                );
+                resetVoiceGenerationState();
+            }
+        }, 2000); // Poll every 2 seconds
+    }
+    
+    // Start voice generation with timeout handling
+    const requestTimeout = setTimeout(() => {
+        // If request takes longer than 30 seconds, start polling
+        showNotification(
+            document.documentElement.getAttribute("data-lang") === "en" 
+                ? "🔄 Voice generation taking longer than expected, switching to polling mode..." 
+                : "🔄 語音生成時間較長，切換到輪詢模式...", 
+            "info"
+        );
+        startVoicePolling();
+    }, 30000); // 30 second timeout
+    
+    // Get selected voice sample
+    const voiceSampleSelect = document.getElementById('voiceSampleSelect');
+    const selectedVoiceSample = voiceSampleSelect ? voiceSampleSelect.value : null;
+    
+    if (!selectedVoiceSample) {
+        showNotification(
+            document.documentElement.getAttribute("data-lang") === "en" 
+                ? "Please select a voice sample" 
+                : "請選擇語音樣本", 
+            "warning"
+        );
+        resetVoiceGenerationState();
+        return;
+    }
+    
+    // Collect emotion parameters from the UI
+    const emotionDescription = document.getElementById('emotionDescription')?.value || '';
+    const angryValue = document.getElementById('angry')?.value || 0;
+    const sadValue = document.getElementById('sad')?.value || 0;
+    const happyValue = document.getElementById('happy')?.value || 0;
+    const afraidValue = document.getElementById('afraid')?.value || 0;
+    const disgustValue = document.getElementById('disgust')?.value || 0;
+    const melancholicValue = document.getElementById('melancholic')?.value || 0;
+    const surprisedValue = document.getElementById('surprised')?.value || 0;
+    const calmValue = document.getElementById('calm')?.value || 0.5;
+    
+    // Prepare the request payload with emotion parameters
+    const requestPayload = {
+        text: text,
+        voice_sample: selectedVoiceSample,
+        emotion_description: emotionDescription,
+        angry: parseFloat(angryValue),
+        sad: parseFloat(sadValue),
+        happy: parseFloat(happyValue),
+        afraid: parseFloat(afraidValue),
+        disgust: parseFloat(disgustValue),
+        melancholic: parseFloat(melancholicValue),
+        surprised: parseFloat(surprisedValue),
+        calm: parseFloat(calmValue)
+    };
+    
+    console.log('🎵 Voice generation request with emotions:', requestPayload);
+    
+    // Make API call to start voice generation job
+    fetch("/start_voice_generation", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestPayload)
+    })
+    .then(response => {
+        clearTimeout(requestTimeout);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.job_id) {
+            // Voice generation job started, begin polling for progress
+            console.log('🎵 Voice generation job started with ID:', data.job_id);
+            startVoiceJobPolling(data.job_id);
+        } else if (data.error) {
+            throw new Error(data.error);
+        } else {
+            throw new Error('No job ID received from server');
+        }
+    })
+    .catch(error => {
+        clearTimeout(requestTimeout);
+        console.error("Voice generation error:", error);
+        
+        // Detect if this is likely a mobile-specific issue
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const isNetworkError = error.message.includes('fetch') || error.message.includes('network') || error.message.includes('timeout');
+        
+        let errorMessage;
+        if (document.documentElement.getAttribute("data-lang") === "en") {
+            errorMessage = `❌ Voice generation failed: ${error.message}`;
+            if (isMobile && isNetworkError) {
+                errorMessage += "\n💡 Mobile tip: Try switching to WiFi or check your connection";
+            }
+        } else {
+            errorMessage = `❌ 語音生成失敗: ${error.message}`;
+            if (isMobile && isNetworkError) {
+                errorMessage += "\n💡 移動設備提示：請嘗試切換到WiFi或檢查網絡連接";
+            }
+        }
+        
+        showNotification(errorMessage, "error");
+        resetVoiceGenerationState();
+    });
+}
+
+// Function to save voice generation settings to localStorage
+function saveVoiceSettings() {
+    try {
+        const settings = {
+            voiceSample: document.getElementById('voiceSampleSelect')?.value || '',
+            emotionDescription: document.getElementById('emotionDescription')?.value || '',
+            emotions: {
+                angry: document.getElementById('angry')?.value || 0,
+                sad: document.getElementById('sad')?.value || 0,
+                happy: document.getElementById('happy')?.value || 0,
+                afraid: document.getElementById('afraid')?.value || 0,
+                disgust: document.getElementById('disgust')?.value || 0,
+                melancholic: document.getElementById('melancholic')?.value || 0,
+                surprised: document.getElementById('surprised')?.value || 0,
+                calm: document.getElementById('calm')?.value || 0.5
+            }
+        };
+        localStorage.setItem('vPromptVoiceSettings', JSON.stringify(settings));
+        console.log('🎵 Voice settings saved:', settings);
+    } catch (error) {
+        console.warn('Failed to save voice settings:', error);
+    }
+}
+
+// Function to load voice generation settings from localStorage
+function loadVoiceSettings() {
+    try {
+        const savedSettings = localStorage.getItem('vPromptVoiceSettings');
+        if (!savedSettings) return;
+        
+        const settings = JSON.parse(savedSettings);
+        console.log('🎵 Loading voice settings:', settings);
+        
+        // Restore voice sample selection
+        const voiceSampleSelect = document.getElementById('voiceSampleSelect');
+        if (voiceSampleSelect && settings.voiceSample) {
+            voiceSampleSelect.value = settings.voiceSample;
+        }
+        
+        // Restore emotion description
+        const emotionDescription = document.getElementById('emotionDescription');
+        if (emotionDescription && settings.emotionDescription) {
+            emotionDescription.value = settings.emotionDescription;
+        }
+        
+        // Restore emotion sliders
+        if (settings.emotions) {
+            Object.entries(settings.emotions).forEach(([emotion, value]) => {
+                const slider = document.getElementById(emotion);
+                if (slider) {
+                    slider.value = value;
+                    updateEmotionValue(emotion);
+                }
+            });
+        }
+        
+        console.log('✅ Voice settings restored successfully');
+    } catch (error) {
+        console.warn('Failed to load voice settings:', error);
+    }
+}
+
+// Function to load voice samples from the server
+function updateEmotionValue(emotionType) {
+    const slider = document.getElementById(emotionType);
+    const valueDisplay = document.getElementById(emotionType + 'Value');
+    if (slider && valueDisplay) {
+        valueDisplay.textContent = parseFloat(slider.value).toFixed(1);
+    }
+    // Save settings when emotion values change
+    saveVoiceSettings();
+}
+
+function loadVoiceSamples() {
+    const voiceSampleSelect = document.getElementById('voiceSampleSelect');
+    if (!voiceSampleSelect) return;
+    
+    fetch('/list_voice_samples')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Clear existing options
+            voiceSampleSelect.innerHTML = '';
+            
+            // Add default option
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = document.documentElement.getAttribute("data-lang") === "en" 
+                ? "Select a voice sample..." 
+                : "選擇語音樣本...";
+            voiceSampleSelect.appendChild(defaultOption);
+            
+            // Add voice sample options
+            data.voice_samples.forEach(sample => {
+                const option = document.createElement('option');
+                option.value = sample.filename;
+                option.textContent = sample.display_name;
+                
+                // Set Male Town as default selection
+                if (sample.filename === 'Male_town.wav') {
+                    option.selected = true;
+                }
+                
+                voiceSampleSelect.appendChild(option);
+            });
+            
+            // Initial voice button state will be set by updateVoiceButtonState()
+            
+            // Load saved settings after voice samples are loaded
+            loadVoiceSettings();
+            
+            // Enable voice generation button when a sample is selected
+            voiceSampleSelect.addEventListener('change', function() {
+                updateVoiceButtonState();
+                // Save settings when voice sample changes
+                saveVoiceSettings();
+            });
+            
+            // Add language selection change listener
+            const languageSelect = document.querySelector('select[name="output_lang"]');
+            if (languageSelect) {
+                languageSelect.addEventListener('change', function() {
+                    updateVoiceButtonState();
+                });
+            }
+            
+            // Initial voice button state update
+            updateVoiceButtonState();
+        })
+        .catch(error => {
+            console.error('Failed to load voice samples:', error);
+            showNotification(
+                document.documentElement.getAttribute("data-lang") === "en" 
+                    ? "Failed to load voice samples" 
+                    : "載入語音樣本失敗", 
+                "error"
+            );
+        });
+}
+
+// Function to update voice button state based on language and voice sample selection
+function updateVoiceButtonState() {
+    const generateVoiceBtn = document.getElementById('generateVoiceBtn');
+    const voiceSampleSelect = document.getElementById('voiceSampleSelect');
+    const languageSelect = document.querySelector('select[name="output_lang"]');
+    
+    if (generateVoiceBtn && voiceSampleSelect && languageSelect) {
+        const selectedLanguage = languageSelect.value;
+        const selectedVoiceSample = voiceSampleSelect.value;
+        
+        // Disable voice generation for Traditional Chinese
+        if (selectedLanguage === 'zh-tw') {
+            generateVoiceBtn.disabled = true;
+            generateVoiceBtn.style.opacity = "0.6";
+            generateVoiceBtn.title = document.documentElement.getAttribute("data-lang") === "en" 
+                ? "Voice generation is not available for Traditional Chinese" 
+                : "繁體中文不支援語音生成";
+        } else if (selectedVoiceSample) {
+            generateVoiceBtn.disabled = false;
+            generateVoiceBtn.style.opacity = "1";
+            generateVoiceBtn.title = "";
+        } else {
+            generateVoiceBtn.disabled = true;
+            generateVoiceBtn.style.opacity = "0.6";
+            generateVoiceBtn.title = document.documentElement.getAttribute("data-lang") === "en" 
+                ? "Please select a voice sample" 
+                : "請選擇語音樣本";
+        }
+    }
 }
 
 // Function to update progress in the WebUI

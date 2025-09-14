@@ -7,15 +7,17 @@
     <img src="{{ image_url }}" alt="Uploaded Image" style="max-width:300px;">
 </div>
 {% endif %}
+
 {% if prompt_text is not none %}
 <div class="form-card" style="padding: 12px 16px;">
     <h3 data-en="Complete Prompt (Text)" data-zh="完整提示詞（文本）">Complete Prompt (Text)</h3>
-    <textarea id="promptTextArea" readonly style="width:100%;height:180px;font-size:0.75em;font-family:monospace;">{{ prompt_text }}</textarea>
-    <div class="button-container">
+    <textarea id="promptTextArea" style="width:100%;height:180px;font-size:0.75em;font-family:monospace;">{{ prompt_text }}</textarea>
+    <div class="button-container" style="display: flex; gap: 8px; align-items: center;">
         <button type="button" id="copyTextBtn" class="icon-btn copy-btn" title="Copy All Text"></button>
     </div>
 </div>
 {% endif %}
+
 {% if prompt_json_str is not none %}
 <div class="form-card" style="padding: 12px 16px;">
     <h3 data-en="JSON Prompt (Veo3)" data-zh="JSON 提示詞（Veo3）">JSON Prompt (Veo3)</h3>
@@ -27,16 +29,24 @@
 
 <div class="form-card">
     <div style="width: 100%; margin-top: 12px;">
-        <div class="seed-input-container" style="display: block; margin-bottom: 12px; width: 100%;">
-            <label for="regenerateSeed" style="font-size: 12px; color: #666; display: block; margin-bottom: 4px;" data-en="Seed:" data-zh="種子：">Seed:</label>
-            <input type="number" id="regenerateSeed" name="seed" placeholder="Random" title="Enter a seed value (0-4294967295) for reproducible results, or leave empty for random generation" style="width: 240px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; display: block;" min="0" max="4294967295" value="{{ seed if seed is defined and seed is not none else '' }}">
+        <!-- Generation Controls - Seed input and button on separate lines -->
+        <div style="width: 100%;">
+            <div class="seed-input-container" style="margin-bottom: 12px;">
+                <label for="regenerateSeed" style="font-size: 12px; color: #666; display: block; margin-bottom: 4px;" data-en="Seed:" data-zh="種子：">Seed:</label>
+                <input type="number" id="regenerateSeed" name="seed" placeholder="Random" title="Enter a seed value (0-4294967295) for reproducible results, or leave empty for random generation" style="width: 140px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; height: 38px; box-sizing: border-box;" min="0" max="4294967295" value="{{ seed if seed is defined and seed is not none else '' }}">
+                <div style="font-size: 10px; color: #888; margin-top: 2px;" data-en="Change value to use different seed" data-zh="修改數值以使用不同種子">Change value to use different seed</div>
+            </div>
+            {% if not prompt_text and not prompt_json_str %}
+            <button type="button" id="regenerateBtn" class="regenerate-btn" style="width: 100%; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500; opacity: 0.5; cursor: not-allowed;" disabled data-en="🔄 Generate Image" data-zh="🔄 生成圖片">🔄 Generate Image</button>
+            {% else %}
+            <button type="button" id="regenerateBtn" class="regenerate-btn" style="width: 100%; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500;" data-en="🔄 Generate Image" data-zh="🔄 生成圖片">🔄 Generate Image</button>
+            {% endif %}
         </div>
         {% if seed is defined and seed is not none %}
-        <div style="margin: 8px 0 0 0; font-size: 1em; color: #666;">
+        <div style="margin: 12px 0 0 0; font-size: 13px; color: #666; text-align: center;">
             <span data-en="Current Seed:" data-zh="目前種子：">Current Seed:</span> <strong>{{ seed }}</strong>
         </div>
         {% endif %}
-        <button type="button" id="regenerateBtn" class="regenerate-btn" style="width: 100%; display: block;" data-en="🔄 Generate Image" data-zh="🔄 生成圖片">🔄 Generate Image</button>
     </div>
 </div>
 {% if loading %}
@@ -49,6 +59,8 @@
 </div>
 {% endif %}
 {% endif %}
+
+<!-- Generated Images Section -->
 {% if generated_images and generated_images.success and generated_images.images %}
 <div>
     <h2 data-en="Generated Images ({{ generated_images.images_count }})" data-zh="生成的圖片 ({{ generated_images.images_count }})">Generated Images ({{ generated_images.images_count }})</h2>
@@ -59,6 +71,103 @@
             <div class="image-filename">{{ image.filename }}</div>
         </div>
         {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Voice Generation Section -->
+{% if prompt_text is not none %}
+<div class="form-card" style="padding: 12px 16px; margin-top: 20px;">
+    <h3 data-en="🎵 Voice Generation" data-zh="🎵 語音生成">🎵 Voice Generation</h3>
+    
+    <!-- Voice Sample Selection -->
+    <div class="form-group" style="margin-bottom: 12px;">
+        <label for="voiceSampleSelect" style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: #333;" data-en="Select Voice Sample:" data-zh="選擇語音樣本：">Select Voice Sample:</label>
+        <select id="voiceSampleSelect" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; background: white;">
+            <option value="" data-en="Loading voice samples..." data-zh="載入語音樣本中...">Loading voice samples...</option>
+        </select>
+        
+    </div>
+    
+    <!-- Emotion Controls -->
+    <div class="form-group" style="margin-bottom: 12px;">
+        <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: #333;" data-en="😊 Emotion Control" data-zh="😊 情感控制">😊 Emotion Control</label>
+        
+
+        
+        <!-- Emotion Sliders -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px;">😠 <span data-en="Angry" data-zh="憤怒">Angry</span></label>
+                <input type="range" id="angry" min="0" max="1" step="0.1" value="0" style="width: 100%;" oninput="updateEmotionValue('angry')">
+                <div id="angryValue" style="font-size: 11px; color: #888; text-align: center;">0.0</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px;">😢 <span data-en="Sad" data-zh="悲傷">Sad</span></label>
+                <input type="range" id="sad" min="0" max="1" step="0.1" value="0" style="width: 100%;" oninput="updateEmotionValue('sad')">
+                <div id="sadValue" style="font-size: 11px; color: #888; text-align: center;">0.0</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px;">😊 <span data-en="Happy" data-zh="快樂">Happy</span></label>
+                <input type="range" id="happy" min="0" max="1" step="0.1" value="0" style="width: 100%;" oninput="updateEmotionValue('happy')">
+                <div id="happyValue" style="font-size: 11px; color: #888; text-align: center;">0.0</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px;">😨 <span data-en="Afraid" data-zh="恐懼">Afraid</span></label>
+                <input type="range" id="afraid" min="0" max="1" step="0.1" value="0" style="width: 100%;" oninput="updateEmotionValue('afraid')">
+                <div id="afraidValue" style="font-size: 11px; color: #888; text-align: center;">0.0</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px;">🤢 <span data-en="Disgust" data-zh="厭惡">Disgust</span></label>
+                <input type="range" id="disgust" min="0" max="1" step="0.1" value="0" style="width: 100%;" oninput="updateEmotionValue('disgust')">
+                <div id="disgustValue" style="font-size: 11px; color: #888; text-align: center;">0.0</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px;">😔 <span data-en="Melancholic" data-zh="憂鬱">Melancholic</span></label>
+                <input type="range" id="melancholic" min="0" max="1" step="0.1" value="0" style="width: 100%;" oninput="updateEmotionValue('melancholic')">
+                <div id="melancholicValue" style="font-size: 11px; color: #888; text-align: center;">0.0</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px;">😲 <span data-en="Surprised" data-zh="驚訝">Surprised</span></label>
+                <input type="range" id="surprised" min="0" max="1" step="0.1" value="0" style="width: 100%;" oninput="updateEmotionValue('surprised')">
+                <div id="surprisedValue" style="font-size: 11px; color: #888; text-align: center;">0.0</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px;">😌 <span data-en="Calm" data-zh="平靜">Calm</span></label>
+                <input type="range" id="calm" min="0" max="1" step="0.1" value="0.5" style="width: 100%;" oninput="updateEmotionValue('calm')">
+                <div id="calmValue" style="font-size: 11px; color: #888; text-align: center;">0.5</div>
+            </div>
+        </div>
+        
+        <div style="font-size: 11px; color: #888; margin-top: 8px; text-align: center;" data-en="Adjust emotion levels to control the voice tone and expression" data-zh="調整情感級別以控制語音音調和表達">Adjust emotion levels to control the voice tone and expression</div>
+    </div>
+    
+    <div class="button-container" style="display: flex; gap: 8px; align-items: center;">
+        <button type="button" id="generateVoiceBtn" class="voice-btn" style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; opacity: 0.6;" title="Generate voice from prompt text" data-en="🎵 Generate Voice" data-zh="🎵 生成語音" disabled>🎵 Generate Voice</button>
+    </div>
+    
+    <!-- Voice Generation Progress -->
+    <div id="voiceProgress" style="display: none; margin-top: 12px; padding: 8px; background: #f0f0f0; border-radius: 4px;">
+        <div style="font-size: 14px; color: #666; margin-bottom: 4px;" data-en="Generating voice..." data-zh="正在生成語音...">Generating voice...</div>
+        <div style="width: 100%; background: #ddd; border-radius: 4px; height: 8px;">
+            <div id="voiceProgressBar" style="width: 0%; background: #4CAF50; height: 100%; border-radius: 4px; transition: width 0.3s;"></div>
+        </div>
+    </div>
+    
+    <!-- Audio Player (hidden initially) -->
+    <div id="audioPlayerContainer" style="display: none; margin-top: 12px; padding: 12px; background: #f9f9f9; border-radius: 4px; border: 1px solid #ddd;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <div style="font-size: 14px; font-weight: 500; color: #333;" data-en="Generated Audio:" data-zh="生成的音頻：">Generated Audio:</div>
+            <audio id="generatedAudio" controls style="flex: 1;">
+                <source id="audioSource" src="" type="audio/wav">
+                Your browser does not support the audio element.
+            </audio>
+            <button type="button" id="downloadAudioBtn" style="padding: 6px 12px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;" title="Download audio file" data-en="Download" data-zh="下載">Download</button>
+        </div>
+        <div id="voicePromptTextContainer" style="display: none;">
+            <div style="font-size: 16px; color: #555; margin-bottom: 8px;" data-en="Complete Prompt (Text):" data-zh="完整提示詞（文本）：">Complete Prompt (Text):</div>
+            <div id="voicePromptText" style="font-size: 14px; color: #333; line-height: 1.5; max-height: 120px; overflow-y: auto; white-space: pre-wrap;"></div>
+        </div>
     </div>
 </div>
 {% endif %}

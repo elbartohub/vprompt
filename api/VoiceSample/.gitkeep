@@ -1,0 +1,2 @@
+# This file ensures the VoiceSample folder is tracked by git even when empty
+# Voice sample files are ignored by .gitignore but the folder structure is preserved

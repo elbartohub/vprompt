@@ -5,21 +5,25 @@
     accent-color: #6366f1;
     border-radius: 6px;
     border: 2px solid #6366f1;
-    margin-right: 8px;
+    margin: 0;
     vertical-align: middle;
     box-shadow: 0 1px 4px rgba(99,102,241,0.08);
     transition: box-shadow 0.2s;
+    flex-shrink: 0;
 }
 .time-input-container input[type="checkbox"]:hover {
     box-shadow: 0 2px 8px rgba(99,102,241,0.18);
 }
 .time-input-container label[for="useTimeCheckbox"] {
-    font-size: 1em;
+    font-size: 0.7em !important;
     font-weight: 400;
     color: #222;
     letter-spacing: 0.01em;
     cursor: pointer;
     vertical-align: middle;
+    margin: 0;
+    line-height: 1.2;
+    flex-shrink: 0;
 }
 /* Animate the hourglass icon in the loading indicator */
 .loading-hourglass {
@@ -50,12 +54,12 @@ body {
     background: linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%);
     font-family: monospace, 'Segoe UI', '微軟正黑體', Arial, sans-serif;
     color: #222;
-    font-size: 150%; /* Enlarged for overall UI */
+    font-size: 100%; /* Normal base font size */
 }
 
 /* Card titles and field titles */
 .form-card h2, .form-card h3, .form-card .card-title, .form-card .field-title {
-    font-size: 2.6em;
+    font-size: 1.3em;
     font-weight: bold;
     color: #3737e0;
     letter-spacing: 0.02em;
@@ -63,27 +67,84 @@ body {
 
 /* Field label styling */
 label, .form-card label, .field-label {
-    font-size: 1.6em;
+    font-size: 1em;
     font-weight: 500;
-}
 }
 
 /* Unify font size for all form elements */
 input, select, textarea, button {
-    font-size: 2em !important; /* Further enlarged for form elements */
+    font-size: 1.1em !important; /* Reduced form elements size */
     font-family: inherit;
-}
 }
 
 /* Enlarge headings and important UI elements */
 h1, h2, h3 {
-    font-size: 2.5em;
+    font-size: 1.5em;
     font-weight: bold;
 }
 
-label, .form-card, .progress-modal, .overlay-text {
-    font-size: 1.5em;
+label, .form-card, .overlay-text {
+    font-size: 1em;
 }
+
+/* Voice Audio Display Styles */
+.voice-audio-display {
+    margin: 16px 0;
+    padding: 16px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 2px solid #0ea5e9;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.voice-audio-display strong {
+    color: #0369a1;
+    font-size: 1.1em;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.voice-audio-display audio {
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    background: #ffffff;
+}
+
+.voice-audio-display small {
+    color: #64748b;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+
+/* Enhanced button states for voice generation */
+#generateVoiceBtn:disabled {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%) !important;
+    color: #ffffff !important;
+    cursor: not-allowed !important;
+    animation: pulse-disabled 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-disabled {
+    0%, 100% {
+        opacity: 0.7;
+    }
+    50% {
+        opacity: 0.9;
+    }
 }
 
 /* Language Switcher Styles */
@@ -127,7 +188,7 @@ label, .form-card, .progress-modal, .overlay-text {
     background: #ffffff;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
-    padding: 20px;
+    padding: 24px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     transition: all 0.3s ease;
     position: relative;
@@ -150,19 +211,42 @@ label, .form-card, .progress-modal, .overlay-text {
 }
 
 .form-group {
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
 .form-group:last-child {
     margin-bottom: 0;
 }
 
+/* Improved field layout for Scene & Character card */
+.form-group select + input[type="text"] {
+    margin-top: 8px;
+}
+
+/* Ensure consistent spacing between form fields */
+.form-card input,
+.form-card select,
+.form-card textarea {
+    margin-bottom: 4px;
+}
+
 .form-card label {
     display: block;
-    margin: 0 0 6px 0;
+    margin: 0 0 8px 0;
     font-weight: 600;
     font-size: 0.95rem;
     color: #374151;
+}
+
+/* Specific styling for Scene & Character form groups */
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group select,
+.form-group input[type="text"] {
+    align-self: stretch;
 }
 
 .form-card input,
@@ -170,12 +254,13 @@ label, .form-card, .progress-modal, .overlay-text {
 .form-card textarea {
     width: 100%;
     margin: 0;
-    padding: 10px 12px;
+    padding: 12px 14px;
     border: 1.5px solid #d1d5db;
     border-radius: 8px;
-    font-size: 0.95rem;
+    font-size: 1.1em;
     transition: all 0.2s ease;
     background: #ffffff;
+    box-sizing: border-box;
 }
 
 .form-card input:focus,
@@ -189,12 +274,66 @@ label, .form-card, .progress-modal, .overlay-text {
 /* Time input container styling */
 .time-input-container {
     display: flex;
-    gap: 8px;
+    gap: 12px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
-.time-input-container input {
+/* Seed input container styling */
+.seed-input-container {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.seed-input-container input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: #6366f1;
+}
+
+.seed-input-container label {
+    font-size: 0.9em !important;
+    font-weight: 400;
+    color: #222;
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+    line-height: 1.2;
+}
+
+.seed-input-container input[type="number"] {
+    flex: 0 0 200px;
+    min-width: 150px;
+    margin: 0;
+    transition: all 0.3s ease;
+}
+
+.time-input-container input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.time-input-container label[for="useTimeCheckbox"] {
+    font-size: 0.7em !important;
+    font-weight: 400;
+    color: #222;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+    line-height: 1.2;
+}
+
+.time-input-container input[type="time"] {
     flex: 1;
+    min-width: 120px;
+    margin: 0;
 }
 
 .reset-time-btn {
@@ -837,6 +976,22 @@ button.icon-btn.copy-btn:hover {
         min-height: 44px; /* Touch-friendly minimum size */
     }
     
+    /* Voice generation button mobile optimization */
+    #generateVoiceBtn {
+        padding: 12px 20px !important;
+        font-size: 16px !important;
+        min-height: 48px !important;
+        min-width: 160px !important;
+        touch-action: manipulation; /* Prevents double-tap zoom */
+    }
+    
+    #downloadAudioBtn {
+        padding: 10px 16px !important;
+        font-size: 14px !important;
+        min-height: 44px !important;
+        touch-action: manipulation;
+    }
+    
     /* Drop zone mobile optimizations */
     .drop-zone {
         min-height: 120px;
@@ -1319,43 +1474,45 @@ input[name="custom_character"] {
     }
 }
 
-/* Generated Images Gallery Styles */
+/* Generated Images Gallery Styles - Card Format */
 .generated-images-gallery {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(550px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 24px;
     margin-top: 25px;
+    padding: 0 8px;
 }
 
 .generated-image-item {
-    background: #f8fafc;
-    border: 2px solid #e2e8f0;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
     border-radius: 16px;
-    padding: 20px;
+    padding: 0;
     text-align: center;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .generated-image-item:hover {
-    border-color: #10b981;
-    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
-    transform: translateY(-4px);
+    border-color: #6366f1;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: translateY(-8px) scale(1.02);
 }
 
 .generated-image-preview {
     width: 100%;
-    max-width: 500px;
     height: auto;
-    max-height: 450px;
-    object-fit: cover;
-    border-radius: 12px;
+    max-height: 500px;
+    object-fit: contain;
+    border-radius: 16px 16px 0 0;
     cursor: pointer;
-    border: 3px solid #e2e8f0;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
+    display: block;
+    background: #f8f9fa;
 }
 
 /* Loading state for images */
@@ -1377,22 +1534,22 @@ input[name="custom_character"] {
 }
 
 .generated-image-preview:hover {
-    border-color: #10b981;
-    transform: scale(1.03);
-    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.2);
+    transform: scale(1.05);
 }
 
 .image-filename {
-    margin-top: 12px;
-    font-size: 0.85rem;
-    color: #64748b;
+    margin: 0;
+    padding: 16px 20px;
+    font-size: 0.875rem;
+    color: #374151;
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-weight: 500;
     word-break: break-all;
-    background: rgba(100, 116, 139, 0.1);
-    padding: 6px 10px;
-    border-radius: 6px;
-    display: inline-block;
-    max-width: 100%;
+    background: #f9fafb;
+    border-radius: 0 0 16px 16px;
+    display: block;
+    text-align: left;
+    border-top: 1px solid #e5e7eb;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1475,27 +1632,39 @@ input[name="custom_character"] {
     max-width: 100%;
 }
 
-/* Responsive design for generated images */
+/* Responsive design for generated images - Card Format */
 @media (max-width: 768px) {
     .generated-images-gallery {
         grid-template-columns: 1fr;
-        gap: 25px;
-    }
-
-    .generated-image-item {
-        padding: 20px;
+        gap: 20px;
+        padding: 0 4px;
     }
 
     .generated-image-preview {
-        max-width: 420px;
-        max-height: 380px;
+        max-height: 400px;
+        object-fit: contain;
+    }
+
+    .image-filename {
+        padding: 12px 16px;
+        font-size: 0.8rem;
     }
 }
 
 @media (max-width: 480px) {
+    .generated-images-gallery {
+        gap: 16px;
+        padding: 0 2px;
+    }
+
     .generated-image-preview {
-        max-width: 380px;
-        max-height: 340px;
+        max-height: 350px;
+        object-fit: contain;
+    }
+
+    .image-filename {
+        padding: 10px 12px;
+        font-size: 0.75rem;
     }
 
     .modal-content {

@@ -53,17 +53,12 @@
                             <option value="en" {% if output_lang == 'en' %}selected{% endif %} data-en="English" data-zh="英語">English</option>
                             <option value="zh-tw" {% if output_lang == 'zh-tw' or output_lang == 'zh-TW' %}selected{% endif %} data-en="Traditional Chinese" data-zh="繁體中文">Traditional Chinese</option>
                             <option value="zh-cn" {% if output_lang == 'zh-cn' or output_lang == 'zh-CN' %}selected{% endif %} data-en="Simplified Chinese" data-zh="簡體中文">Simplified Chinese</option>
-                            <option value="ja" {% if output_lang == 'ja' %}selected{% endif %} data-en="Japanese" data-zh="日語">Japanese</option>
-                            <option value="ko" {% if output_lang == 'ko' %}selected{% endif %} data-en="Korean" data-zh="韓語">Korean</option>
-                            <option value="fr" {% if output_lang == 'fr' %}selected{% endif %} data-en="French" data-zh="法語">French</option>
-                            <option value="de" {% if output_lang == 'de' %}selected{% endif %} data-en="German" data-zh="德語">German</option>
-                            <option value="es" {% if output_lang == 'es' %}selected{% endif %} data-en="Spanish" data-zh="西班牙語">Spanish</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label data-en="Time:" data-zh="時間：">Time:</label>
                         <div class="time-input-container">
-                            <input type="checkbox" id="useTimeCheckbox" checked>
+                            <input type="checkbox" id="useTimeCheckbox">
                             <label for="useTimeCheckbox" style="margin-left:6px;">Use Time</label>
                             <input type="time" name="time" min="00:00" max="23:59" value="{{ time }}" id="timeInput" style="margin-left:12px;">
                         </div>
@@ -164,7 +159,27 @@
                         <strong>💡 <span data-en="Tip:" data-zh="提示：">Tip:</span></strong>
                         <span data-en="Even without uploading an image, the system will generate rich prompts based on your selected scene, character, time, and additional description!" data-zh="即使沒有上傳圖片，系統也會根據您選擇的場景、主角、時間和額外描述來生成豐富的提示詞！">Even without uploading an image, the system will generate rich prompts based on your selected scene, character, time, and additional description!</span>
                     </div>
-                    <div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+                    
+                    <!-- Seed Options - Hidden by default, Use Random Seed enabled -->
+                    <div class="form-group" style="margin-top: 16px; display: none;">
+                        <label class="option-label">
+                            <input type="checkbox" id="useRandomSeed" checked>
+                            <span class="option-text">
+                                <span class="option-title" data-en="🎲 Use Random Seed" data-zh="🎲 使用隨機種子">🎲 Use Random Seed</span>
+                                <span class="option-desc" data-en="Generate with random seed for varied results" data-zh="使用隨機種子生成多樣結果">Generate with random seed for varied results</span>
+                            </span>
+                        </label>
+                        <div id="seedInputContainer" style="margin-top: 8px; display: none; padding: 12px; background-color: #f8f9fa; border-radius: 6px; border-left: 4px solid #6366f1;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                <span style="font-size: 14px; font-weight: 500; color: #6366f1;">🎯</span>
+                                <label for="seedInput" style="font-size: 13px; font-weight: 500; color: #374151; margin: 0;" data-en="Custom Seed Value:" data-zh="自訂種子值：">Custom Seed Value:</label>
+                            </div>
+                            <input type="number" id="seedInput" name="seed" placeholder="Enter seed (0-4294967295)" title="Enter a seed value (0-4294967295) for reproducible results" style="width: 100%; max-width: 200px; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px;" min="0" max="4294967295">
+                            <div style="font-size: 11px; color: #6b7280; margin-top: 4px;" data-en="Use the same seed to generate identical results" data-zh="使用相同種子可生成相同結果">Use the same seed to generate identical results</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display:flex;align-items:center;gap:12px;margin-top:16px;">
                         <button type="submit" data-en="Generate Prompt" data-zh="生成提示詞">Generate Prompt</button>
                     </div>
                 </div>
@@ -183,6 +198,8 @@
         <div id="resultsContainer" data-area>
             {% include '_results.html' %}
         </div>
+
+
     </div>
     
     <!-- Image Modal -->

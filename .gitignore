@@ -3,6 +3,7 @@
 venv/
 uploads/
 __pycache__/
+api/__pycache__/
 *.pyc
 *.pyo
 *.pyd
@@ -11,4 +12,9 @@ output/
 view_log.py
 server.log
 .github/copilot-instructions.md
+
+# Ignore all files in VoiceSample folder but keep the folder structure
+api/VoiceSample/*
+!api/VoiceSample/.gitkeep
+
 

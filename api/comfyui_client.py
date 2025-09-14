@@ -13,14 +13,22 @@ import time
 import threading
 import os
 import logging
+# subprocess and shutil imports removed - no longer needed for voice processing
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 # Enable WebSocket capture for debugging
 WS_CAPTURE_ENABLED = True
 WS_CAPTURE_PATH = '/Volumes/2TLexarNM610Pro/AI/vPrompt/uploads/ws_capture.log'
+
+# Voice-related functions removed - application now uses Index-TTS 2
 
 class ComfyUIClient:
     def __init__(self, server_address=None, port=None):
@@ -42,7 +50,6 @@ class ComfyUIClient:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            logger = logging.getLogger(__name__)
             logger.error("Error generating image: %s", e)
             return {"error": str(e)}
 
@@ -58,8 +65,10 @@ class ComfyUIClient:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            logger = logging.getLogger(__name__)
             logger.error("Error queuing prompt: %s", e)
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error("Response status: %s", e.response.status_code)
+                logger.error("Response content: %s", e.response.text)
             return None
     
     def get_image(self, filename, subfolder="", folder_type="output"):
@@ -74,9 +83,10 @@ class ComfyUIClient:
             response.raise_for_status()
             return response.content
         except requests.exceptions.RequestException as e:
-            logger = logging.getLogger(__name__)
             logger.error("Error getting image: %s", e)
             return None
+    
+    # get_audio method removed - no longer needed for voice generation
     
     def get_history(self, prompt_id):
         """Get execution history for a prompt"""
@@ -85,7 +95,6 @@ class ComfyUIClient:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            logger = logging.getLogger(__name__)
             logger.error("Error getting history: %s", e)
             return None
     
@@ -94,7 +103,6 @@ class ComfyUIClient:
 
         Returns True if completion event detected, False on timeout or error.
         """
-        logger = logging.getLogger(__name__)
         client_id = str(uuid.uuid4())
         completion_event = threading.Event()
 
@@ -103,27 +111,20 @@ class ComfyUIClient:
         
         def on_message(ws, message):
             nonlocal completion_timeout_set
-            logger.debug("WebSocket message: %s", message)
             # Optionally write raw WS messages to a capture file for debugging
             try:
                 if WS_CAPTURE_ENABLED and WS_CAPTURE_PATH:
                     with open(WS_CAPTURE_PATH, 'a', encoding='utf-8') as fh:
                         fh.write(message + "\n")
             except Exception:
-                logger.debug("Failed to write WS capture file")
+                pass
             try:
                 data = json.loads(message)
             except Exception as e:
-                logger.debug("Failed to parse WS message: %s", e)
                 return
 
             event_type = data.get('type', '')
             event_data = data.get('data', {}) or {}
-            logger.debug("WebSocket event type: %s, keys: %s", event_type, list(event_data.keys()))
-            
-            # Log all event types for debugging
-            if event_type not in ('crystools.monitor', 'status'):
-                logger.info("Received WebSocket event: %s", event_type)
 
             # Try to detect completion using multiple possible event names/structures
             try:
@@ -186,25 +187,32 @@ class ComfyUIClient:
                         pass
                     return None
 
-                prog = _extract_progress(event_data)
-                if prog is None and isinstance(event_data, dict):
-                    for v in event_data.values():
-                        prog = _extract_progress(v)
-                        if prog is not None:
-                            break
+                # Process progress for all prompts to show real-time updates
+                should_process_progress = False
+                if event_type == 'progress_state':
+                    # Process all progress_state events to show real-time progress
+                    should_process_progress = True
+                elif event_type in ('progress', 'status'):
+                    # For other progress events, process them (legacy support)
+                    should_process_progress = True
+                
+                if should_process_progress:
+                    prog = _extract_progress(event_data)
+                    if prog is None and isinstance(event_data, dict):
+                        for v in event_data.values():
+                            prog = _extract_progress(v)
+                            if prog is not None:
+                                break
 
-                if prog is not None:
-                    logger.debug("Progress: %d%%", prog)
-                    # Call progress callback if provided
-                    if progress_callback:
-                        try:
-                            progress_callback(prog)
-                        except Exception as e:
-                            logger.debug("Progress callback error: %s", e)
+                    if prog is not None:
+                        if progress_callback:
+                            try:
+                                progress_callback(prog)
+                            except Exception as e:
+                                logger.error("Progress callback error: %s", e)
 
                 if event_type in ('execution_finished', 'execution_complete', 'execution_end', 'executed', 'execution_success', 'success', 'finished'):
                     if not event_data or event_data.get('prompt_id') == prompt_id:
-                        logger.debug("Execution completed (finish event: %s)", event_type)
                         completion_event.set()
                         try:
                             ws.close()
@@ -216,7 +224,6 @@ class ComfyUIClient:
                     node = event_data.get('node')
                     pid = event_data.get('prompt_id')
                     if node is None and pid == prompt_id:
-                        logger.debug("Execution completed! (executing event)")
                         completion_event.set()
                         try:
                             ws.close()
@@ -235,7 +242,6 @@ class ComfyUIClient:
                                     all_complete = False
                                     break
                         if all_complete:
-                            logger.debug("All nodes complete, assuming execution finished")
                             completion_event.set()
                             try:
                                 ws.close()
@@ -247,13 +253,15 @@ class ComfyUIClient:
                 logger.exception("Error while handling WS event: %s", e)
 
         def on_error(ws, error):
-            logger.error("WebSocket error: %s", error)
+            logger.error("WebSocket error for prompt_id %s: %s", prompt_id, error)
+            # Set completion event on error to trigger fallback
+            completion_event.set()
 
         def on_close(ws, close_status_code, close_msg):
-            logger.debug("WebSocket connection closed: %s %s", close_status_code, close_msg)
+            logger.info("WebSocket closed for prompt_id %s - code: %s, msg: %s", prompt_id, close_status_code, close_msg)
 
         def on_open(ws):
-            logger.debug("WebSocket connection opened")
+            logger.info("WebSocket opened for prompt_id %s", prompt_id)
 
         ws = websocket.WebSocketApp(
             f"{self.ws_url}?clientId={client_id}",
@@ -263,17 +271,25 @@ class ComfyUIClient:
             on_open=on_open
         )
 
-        # Run websocket in background thread and wait for completion_event with timeout
-        ws_thread = threading.Thread(target=ws.run_forever, daemon=True)
+        # Run websocket in background thread with mobile-optimized settings
+        # Use shorter ping interval for mobile networks
+        ws_thread = threading.Thread(
+            target=lambda: ws.run_forever(
+                ping_interval=30,  # Shorter ping for mobile networks
+                ping_timeout=10,   # Faster timeout detection
+                ping_payload="ping"
+            ), 
+            daemon=True
+        )
         ws_thread.start()
 
         finished = completion_event.wait(timeout)
         if not finished:
-            logger.warning("WebSocket wait timed out after %s seconds", timeout)
+            logger.warning("WebSocket wait timed out after %s seconds (mobile network issue?)", timeout)
             try:
                 ws.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Error closing WebSocket: %s", e)
             return False
 
         return True
@@ -281,13 +297,18 @@ class ComfyUIClient:
 def load_workflow(file_path=None):
     """Load the workflow JSON"""
     if file_path is None:
-        # Load from qwen_image.json (Qwen models)
+        # Try to use the qwen workflow first, fallback to working_image_workflow.json
         script_dir = os.path.dirname(os.path.abspath(__file__))
         qwen_workflow_path = os.path.join(script_dir, 'qwen_image.json')
+        working_workflow_path = os.path.join(script_dir, 'working_image_workflow.json')
+        
         if os.path.exists(qwen_workflow_path):
             file_path = qwen_workflow_path
+        elif os.path.exists(working_workflow_path):
+            file_path = working_workflow_path
+            logger.warning("Using working workflow as fallback: %s", file_path)
         else:
-            raise FileNotFoundError("qwen_image.json workflow file not found")
+            raise FileNotFoundError(f"No workflow file found. Checked: {qwen_workflow_path}, {working_workflow_path}")
     
     if file_path and os.path.exists(file_path):
         with open(file_path, 'r') as f:
@@ -313,11 +334,15 @@ def modify_prompt(workflow, new_prompt, negative_prompt="", seed=None):
 
     return workflow_copy
 
-def generate_image(prompt_text, negative_prompt="", output_dir="/Volumes/2TLexarNM610Pro/AI/vPrompt/uploads/generated", seed=None, progress_callback=None):
+# Voice workflow functions removed - application now uses Index-TTS 2
+
+# generate_voice function removed - application now uses Index-TTS 2
+
+def generate_image(prompt_text, negative_prompt="", output_dir="/Volumes/2TLexarNM610Pro/AI/vPrompt/uploads/generated", seed=None, progress_callback=None, server_address=None, port=None):
     """Generate an image using ComfyUI"""
     import random
 
-    client = ComfyUIClient()
+    client = ComfyUIClient(server_address=server_address, port=port)
 
     # Load and modify workflow
     workflow = load_workflow()
@@ -325,18 +350,11 @@ def generate_image(prompt_text, negative_prompt="", output_dir="/Volumes/2TLexar
     # Generate random seed if not provided
     if seed is None:
         seed = random.randint(0, 2**32 - 1)  # Random 32-bit integer
-        logger = logging.getLogger(__name__)
-        logger.info("Using random seed: %s", seed)
 
     modified_workflow = modify_prompt(workflow, prompt_text, negative_prompt, seed)
 
     # Generate unique client ID
     client_id = str(uuid.uuid4())
-
-    logger = logging.getLogger(__name__)
-    logger.info("Sending prompt to ComfyUI at %s", client.base_url)
-    logger.debug("Prompt: %s...", prompt_text[:100])
-    logger.debug("Seed: %s", seed)
     
     # Queue the prompt
     result = client.queue_prompt(modified_workflow, client_id)
@@ -349,29 +367,41 @@ def generate_image(prompt_text, negative_prompt="", output_dir="/Volumes/2TLexar
         logger.error("No prompt_id received")
         return None
 
-    logger.info("Prompt queued with ID: %s", prompt_id)
-
     # Wait for completion (WebSocket) with timeout
-    logger.info("Waiting for completion...")
+    # Reduced timeout since ComfyUI typically completes in 30-60 seconds
+    logger.info("Starting WebSocket wait for prompt_id: %s with 60s timeout", prompt_id)
     success = client.wait_for_completion(prompt_id, timeout=60, progress_callback=progress_callback)
+    logger.info("WebSocket wait result for prompt_id: %s - success: %s", prompt_id, success)
 
     if not success:
-        logger.warning("WebSocket did not signal completion within timeout, falling back to polling history")
         # Quick check: see if images are already available
         history = client.get_history(prompt_id)
         if history and prompt_id in history and any('images' in o for o in history[prompt_id].get('outputs', {}).values()):
-            logger.info("Images already available, skipping polling")
+            pass
         else:
-            # Fallback: poll history for a limited time to detect completed outputs
-            poll_deadline = time.time() + 15  # Reduced from 30 to 15 seconds
+            # Fallback: poll history for a longer time to detect completed outputs
+            # Increased timeout to handle remote ComfyUI servers that may take longer
+            poll_deadline = time.time() + 90  # Increased from 15 to 90 seconds for remote servers
+            logger.info("WebSocket failed, falling back to polling for prompt_id: %s", prompt_id)
             while time.time() < poll_deadline:
                 history = client.get_history(prompt_id)
                 if history:
                     # Check if outputs exist
                     if prompt_id in history and any('images' in o for o in history[prompt_id].get('outputs', {}).values()):
-                        logger.info("Found images in history via polling")
+                        logger.info("Polling detected completion with outputs for prompt_id: %s", prompt_id)
                         break
-                time.sleep(1)  # Reduced from 2 to 1 second for faster polling
+                    # Also check if job completed successfully (even without outputs yet)
+                    elif prompt_id in history:
+                        job_data = history[prompt_id]
+                        status = job_data.get('status', {})
+                        if status.get('completed') or status.get('status_str') == 'success':
+                            logger.info("Polling detected job completion (status: %s) for prompt_id: %s", status.get('status_str'), prompt_id)
+                            # Wait a bit more for outputs to appear
+                            time.sleep(1)
+                            history = client.get_history(prompt_id)
+                            if history and prompt_id in history and any('images' in o for o in history[prompt_id].get('outputs', {}).values()):
+                                break
+                time.sleep(1)  # Reduced from 2 to 1 second for faster detection
 
         if not history:
             logger.error("Failed to get history via polling")
@@ -393,10 +423,6 @@ def generate_image(prompt_text, negative_prompt="", output_dir="/Volumes/2TLexar
                     filename = image_info['filename']
                     subfolder = image_info.get('subfolder', '')
 
-                    # Debug: Print expected image path and check existence
-                    expected_path = os.path.join(output_dir, filename)
-                    logger.info("[IMAGE DEBUG] Checking for image: %s", expected_path)
-                    logger.info("[IMAGE DEBUG] Exists: %s", os.path.exists(expected_path))
                     # Download image from ComfyUI server
                     image_data = client.get_image(filename, subfolder)
                     if image_data:
@@ -409,11 +435,9 @@ def generate_image(prompt_text, negative_prompt="", output_dir="/Volumes/2TLexar
                         with open(local_path, 'wb') as f:
                             f.write(image_data)
                         images.append(local_path)
-                        logger.info("Image downloaded and saved: %s", local_path)
                     else:
                         logger.error("Failed to download image data for %s", filename)
 
-    logger.info("generate_image returning %s images", len(images))
     return images
 
 if __name__ == "__main__":
@@ -421,17 +445,13 @@ if __name__ == "__main__":
     prompt = "A beautiful sunset over a mountain landscape, cinematic lighting, highly detailed, 8k resolution"
     negative = "blurry, low quality, bad anatomy"
     
-    logger = logging.getLogger(__name__)
-    logger.info("ComfyUI API Client Test")
-    logger.info("%s", "=" * 50)
-    
     try:
         images = generate_image(prompt, negative)
         if images:
-            logger.info("Successfully generated %s images:", len(images))
+            print(f"Successfully generated {len(images)} images:")
             for img in images:
-                logger.info("  - %s", img)
+                print(f"  - {img}")
         else:
-            logger.info("No images generated")
+            print("No images generated")
     except Exception as e:
         logger.exception("Error: %s", e)

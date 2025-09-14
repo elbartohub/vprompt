@@ -137,15 +137,8 @@ def generate_from_vprompt_json(json_file, output_dir="./vprompt_output", seed=No
         print(f"❌ Error processing vPrompt JSON: {e}")
         return None
 
-def generate_from_vprompt_dict(vprompt_dict, output_dir="./vprompt_output", seed=None, progress_callback=None):
-    """Generate image from vPrompt dictionary
-    
-    Args:
-        vprompt_dict: vPrompt dictionary containing generation parameters
-        output_dir: Directory to save generated images
-        seed: Random seed for generation
-        progress_callback: Optional callback function to receive progress updates (0-100)
-    """
+def generate_from_vprompt_dict(vprompt_dict, output_dir="./vprompt_output", seed=None, progress_callback=None, server_address=None, port=None):
+    """Generate image from vPrompt dictionary"""
     try:
         positive, negative = json_to_prompt(vprompt_dict)
         
@@ -166,7 +159,9 @@ def generate_from_vprompt_dict(vprompt_dict, output_dir="./vprompt_output", seed
             negative_prompt=negative or "",
             output_dir=output_dir,
             seed=seed,
-            progress_callback=progress_callback
+            progress_callback=progress_callback,
+            server_address=server_address,
+            port=port
         )
         
         return images
